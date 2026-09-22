@@ -4,105 +4,229 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Winners Bingo</title>
-  <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: #0f172a;
+      background-color: #0b0f19;
       color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      padding: 16px;
       min-height: 100vh;
-      padding: 20px;
     }
-    .container {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 20px;
-      padding: 24px;
-      width: 100%;
-      max-width: 360px;
+    .header {
       text-align: center;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      margin-bottom: 12px;
     }
-    .logo {
-      font-size: 48px;
-      margin-bottom: 10px;
-    }
-    h1 {
-      font-size: 24px;
-      font-weight: 700;
-      color: #f8fafc;
-      margin-bottom: 8px;
-    }
-    p {
-      color: #94a3b8;
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-    .user-card {
-      background: #0f172a;
+    .header h1 { font-size: 22px; color: #f8fafc; }
+    .header p { font-size: 13px; color: #38bdf8; }
+    
+    .caller-box {
+      background: #1e293b;
+      border: 2px solid #334155;
       border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      color: #38bdf8;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 16px;
+      width: 100%;
+      max-width: 340px;
+      justify-content: space-between;
     }
-    .btn {
+    .current-ball {
+      width: 50px;
+      height: 50px;
+      background: radial-gradient(circle at 30% 30%, #f43f5e, #be123c);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 20px;
+      box-shadow: 0 4px 10px rgba(244, 63, 94, 0.4);
+    }
+    .btn-draw {
       background: linear-gradient(135deg, #6366f1, #a855f7);
       color: white;
       border: none;
-      padding: 14px 20px;
-      font-size: 16px;
+      padding: 10px 16px;
+      font-size: 14px;
       font-weight: 600;
-      border-radius: 12px;
-      width: 100%;
+      border-radius: 8px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
-      transition: opacity 0.2s;
     }
-    .btn:active {
-      opacity: 0.8;
+
+    .bingo-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 340px;
+      background: #1e293b;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+    }
+    .grid-header {
+      font-weight: bold;
+      text-align: center;
+      color: #f59e0b;
+      font-size: 18px;
+      padding-bottom: 4px;
+    }
+    .cell {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .cell.marked {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #34d399;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    }
+    .cell.free {
+      background: #8b5cf6;
+      color: white;
+      font-size: 11px;
+    }
+
+    .win-banner {
+      display: none;
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #22c55e;
+      color: white;
+      font-weight: bold;
+      border-radius: 8px;
+      animation: pop 0.3s ease;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <div class="logo">🎲</div>
-    <h1>Winners Bingo</h1>
-    <p>Welcome to the live Mini App platform!</p>
-
-    <div class="user-card" id="userInfo">
-      Loading profile...
-    </div>
-
-    <button class="btn" onclick="Telegram.WebApp.close()">Close Game</button>
+  <div class="header">
+    <h1>🎲 Winners Bingo</h1>
+    <p id="playerLabel">Player: Loading...</p>
   </div>
 
+  <div class="caller-box">
+    <div>
+      <div style="font-size: 11px; color: #94a3b8;">LAST CALLED</div>
+      <div id="calledNumber" class="current-ball">--</div>
+    </div>
+    <button class="btn-draw" onclick="drawNumber()">Call Number</button>
+  </div>
+
+  <div class="bingo-grid" id="bingoGrid">
+    <div class="grid-header">B</div>
+    <div class="grid-header">I</div>
+    <div class="grid-header">N</div>
+    <div class="grid-header">G</div>
+    <div class="grid-header">O</div>
+  </div>
+
+  <div id="winBanner" class="win-banner">🎉 BINGO! YOU WIN! 🎉</div>
+
   <script>
-    // Initialize Telegram WebApp SDK
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
-    // Display User Information from Telegram
     const user = tg.initDataUnsafe?.user;
-    const userInfoDiv = document.getElementById('userInfo');
-
     if (user) {
-      userInfoDiv.innerHTML = `Player: <b>${user.first_name}</b> ${user.username ? '(@' + user.username + ')' : ''}`;
-    } else {
-      userInfoDiv.innerHTML = 'Logged in as Guest';
+      document.getElementById('playerLabel').innerText = `Player: ${user.first_name}`;
     }
+
+    const calledNumbers = new Set();
+    const boardState = Array(25).fill(false);
+    let boardValues = [];
+
+    function generateBoard() {
+      const columns = [
+        getRandNums(1, 15, 5),
+        getRandNums(16, 30, 5),
+        getRandNums(31, 45, 5),
+        getRandNums(46, 60, 5),
+        getRandNums(61, 75, 5)
+      ];
+
+      boardValues = [];
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 5; col++) {
+          boardValues.push(columns[col][row]);
+        }
+      }
+
+      const grid = document.getElementById('bingoGrid');
+      boardValues.forEach((val, idx) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        if (idx === 12) {
+          cell.innerText = 'FREE';
+          cell.classList.add('marked', 'free');
+          boardState[12] = true;
+        } else {
+          cell.innerText = val;
+          cell.onclick = () => toggleMark(idx, cell);
+        }
+        grid.appendChild(cell);
+      });
+    }
+
+    function getRandNums(min, max, count) {
+      const arr = [];
+      while (arr.length < count) {
+        const r = Math.floor(Math.random() * (max - min + 1)) + min;
+        if (!arr.includes(r)) arr.push(r);
+      }
+      return arr;
+    }
+
+    function toggleMark(idx, el) {
+      boardState[idx] = !boardState[idx];
+      el.classList.toggle('marked');
+      checkWin();
+    }
+
+    function drawNumber() {
+      if (calledNumbers.size >= 75) return;
+      let num;
+      do {
+        num = Math.floor(Math.random() * 75) + 1;
+      } while (calledNumbers.has(num));
+
+      calledNumbers.add(num);
+      document.getElementById('calledNumber').innerText = num;
+    }
+
+    function checkWin() {
+      const lines = [
+        [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
+        [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
+        [0,6,12,18,24], [4,8,12,16,20]
+      ];
+
+      const isWin = lines.some(line => line.every(idx => boardState[idx]));
+      if (isWin) {
+        document.getElementById('winBanner').style.display = 'block';
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      }
+    }
+
+    generateBoard();
   </script>
 </body>
 </html>
