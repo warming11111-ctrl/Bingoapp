@@ -8,81 +8,107 @@ app.use(cors());
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+  cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Multiplayer Game Room State
-const gameState = {
-  calledNumbers: [],
-  currentNumber: null,
-  players: {},
-  isPlaying: false,
-  timer: null
-};
+const rooms = {};
 
-function startBallCaller() {
-  if (gameState.isPlaying) return;
-  gameState.isPlaying = true;
-  gameState.calledNumbers = [];
+function createRoom(roomId) {
+  return {
+    id: roomId,
+    calledNumbers: [],
+    currentNumber: null,
+    players: {},
+    isPlaying: false,
+    timer: null
+  };
+}
 
-  gameState.timer = setInterval(() => {
-    if (gameState.calledNumbers.length >= 75) {
-      clearInterval(gameState.timer);
-      gameState.isPlaying = false;
+function startRoomCaller(roomId) {
+  const room = rooms[roomId];
+  if (!room || room.isPlaying) return;
+  
+  room.isPlaying = true;
+  room.calledNumbers = [];
+
+  room.timer = setInterval(() => {
+    if (!rooms[roomId] || room.calledNumbers.length >= 75) {
+      clearInterval(room.timer);
+      if (rooms[roomId]) room.isPlaying = false;
       return;
     }
 
     let num;
     do {
       num = Math.floor(Math.random() * 75) + 1;
-    } while (gameState.calledNumbers.includes(num));
+    } while (room.calledNumbers.includes(num));
 
-    gameState.calledNumbers.push(num);
-    gameState.currentNumber = num;
+    room.calledNumbers.push(num);
+    room.currentNumber = num;
 
-    io.emit('ballDrawn', {
+    io.to(roomId).emit('ballDrawn', {
       number: num,
-      history: gameState.calledNumbers
+      history: room.calledNumbers
     });
-  }, 4000); // Draws a new ball every 4 seconds
+  }, 4000);
 }
 
 io.on('connection', (socket) => {
-  console.log(`Player connected: ${socket.id}`);
+  let currentRoom = null;
 
-  // Send current state to newly joined player
-  socket.emit('gameState', {
-    currentNumber: gameState.currentNumber,
-    calledNumbers: gameState.calledNumbers,
-    playersCount: Object.keys(gameState.players).length + 1
-  });
+  socket.on('joinRoom', ({ roomId, playerName }) => {
+    const roomKey = roomId || 'global';
+    
+    if (!rooms[roomKey]) {
+      rooms[roomKey] = createRoom(roomKey);
+    }
 
-  socket.on('joinGame', (playerData) => {
-    gameState.players[socket.id] = playerData;
-    io.emit('playerCountUpdate', Object.keys(gameState.players).length);
+    currentRoom = roomKey;
+    socket.join(roomKey);
 
-    // Auto-start caller if players are connected
-    if (!gameState.isPlaying) {
-      startBallCaller();
+    const room = rooms[roomKey];
+    room.players[socket.id] = { name: playerName, id: socket.id };
+
+    socket.emit('gameState', {
+      roomId: roomKey,
+      currentNumber: room.currentNumber,
+      calledNumbers: room.calledNumbers,
+      playersCount: Object.keys(room.players).length
+    });
+
+    io.to(roomKey).emit('playerCountUpdate', Object.keys(room.players).length);
+
+    if (!room.isPlaying) {
+      startRoomCaller(roomKey);
     }
   });
 
-  socket.on('claimBingo', (playerData) => {
-    io.emit('gameWinner', playerData);
-    clearInterval(gameState.timer);
-    gameState.isPlaying = false;
+  socket.on('claimBingo', ({ playerName }) => {
+    if (!currentRoom || !rooms[currentRoom]) return;
+    
+    const room = rooms[currentRoom];
+    io.to(currentRoom).emit('gameWinner', { name: playerName });
+    clearInterval(room.timer);
+    room.isPlaying = false;
   });
 
   socket.on('disconnect', () => {
-    delete gameState.players[socket.id];
-    io.emit('playerCountUpdate', Object.keys(gameState.players).length);
+    if (currentRoom && rooms[currentRoom]) {
+      const room = rooms[currentRoom];
+      delete room.players[socket.id];
+      
+      const remaining = Object.keys(room.players).length;
+      io.to(currentRoom).emit('playerCountUpdate', remaining);
+
+      if (remaining === 0 && currentRoom !== 'global') {
+        clearInterval(room.timer);
+        delete rooms[currentRoom];
+      }
+    }
   });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Bingo multiplayer server active on port ${PORT}`);
+  console.log(`Bingo multi-room server running on port ${PORT}`);
 });
