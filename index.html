@@ -30,249 +30,110 @@
     }
     .header p { font-size: 11px; color: #38bdf8; }
 
-    .room-bar {
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
       display: flex;
-      gap: 6px;
-      width: 100%;
-      max-width: 340px;
-      margin-bottom: 8px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
     }
-    .room-bar input {
-      flex: 1;
+    .modal-content {
       background: #111827;
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 6px 10px;
-      color: #fff;
-      font-size: 12px;
-      text-transform: uppercase;
+      border: 2px solid #374151;
+      border-radius: 14px;
+      padding: 15px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
     }
-    .room-bar button {
-      background: linear-gradient(135deg, #10b981, #059669);
+    .select-card-btn {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
       color: white;
       border: none;
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: bold;
+      padding: 10px 16px;
+      margin-top: 10px;
       border-radius: 8px;
+      font-weight: bold;
+      width: 100%;
       cursor: pointer;
     }
 
+    .room-bar {
+      display: flex; gap: 6px; width: 100%; max-width: 340px; margin-bottom: 8px;
+    }
+    .room-bar input {
+      flex: 1; background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 6px 10px; color: #fff; font-size: 12px; text-transform: uppercase;
+    }
+    .room-bar button {
+      background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;
+    }
+
     .stats-bar {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      max-width: 340px;
-      background: #111827;
-      padding: 6px 10px;
-      border-radius: 10px;
-      border: 1px solid #1f2937;
-      margin-bottom: 8px;
-      font-size: 11px;
-      color: #9ca3af;
+      display: flex; justify-content: space-between; width: 100%; max-width: 340px; background: #111827; padding: 6px 10px; border-radius: 10px; border: 1px solid #1f2937; margin-bottom: 8px; font-size: 11px; color: #9ca3af;
     }
     .stats-bar span { color: #f3f4f6; font-weight: bold; }
 
     .caller-section {
-      width: 100%;
-      max-width: 340px;
-      background: #111827;
-      border: 2px solid #1f2937;
-      border-radius: 14px;
-      padding: 10px;
-      margin-bottom: 8px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      width: 100%; max-width: 340px; background: #111827; border: 2px solid #1f2937; border-radius: 14px; padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; align-items: center;
     }
-    .ball-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
+    .ball-container { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .current-ball {
-      width: 56px;
-      height: 56px;
-      background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 20px;
-      box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
-      border: 2px solid #fca5a5;
-      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      width: 56px; height: 56px; background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); border: 2px solid #fca5a5; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    @keyframes popIn {
-      0% { transform: scale(0.3); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
+    @keyframes popIn { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     .history-balls { display: flex; gap: 4px; }
-    .mini-ball {
-      width: 28px;
-      height: 28px;
-      background: #374151;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-      color: #d1d5db;
-    }
+    .mini-ball { width: 28px; height: 28px; background: #374151; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #d1d5db; }
 
-    .caller-controls {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      font-size: 11px;
-      color: #9ca3af;
-    }
+    .caller-controls { display: flex; justify-content: space-between; width: 100%; font-size: 11px; color: #9ca3af; }
     .toggle-group { display: flex; gap: 10px; }
 
     .bingo-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 5px;
-      width: 100%;
-      max-width: 340px;
-      background: #111827;
-      padding: 8px;
-      border-radius: 14px;
-      border: 1px solid #1f2937;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 100%; max-width: 340px; background: #111827; padding: 8px; border-radius: 14px; border: 1px solid #1f2937;
     }
-    .grid-header {
-      font-weight: 900;
-      text-align: center;
-      color: #f59e0b;
-      font-size: 18px;
-    }
+    .grid-header { font-weight: 900; text-align: center; color: #f59e0b; font-size: 18px; }
     .cell {
-      background: #1f2937;
-      border: 1px solid #374151;
-      border-radius: 8px;
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 15px;
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.15s ease;
+      background: #1f2937; border: 1px solid #374151; border-radius: 8px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; cursor: pointer; user-select: none; transition: all 0.15s ease;
     }
-    .cell.marked {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: #ffffff;
-      border-color: #34d399;
-      transform: scale(0.96);
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-    }
-    .cell.winning-line {
-      animation: pulseWin 0.8s infinite alternate;
-      background: linear-gradient(135deg, #f59e0b, #d97706) !important;
-      border-color: #fef08a !important;
-    }
-    @keyframes pulseWin {
-      0% { transform: scale(0.95); }
-      100% { transform: scale(1.05); }
-    }
-    .cell.free {
-      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-      color: white;
-      font-size: 10px;
-      border-color: #a78bfa;
-    }
+    .cell.marked { background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border-color: #34d399; transform: scale(0.96); box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+    .cell.winning-line { animation: pulseWin 0.8s infinite alternate; background: linear-gradient(135deg, #f59e0b, #d97706) !important; border-color: #fef08a !important; }
+    @keyframes pulseWin { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
+    .cell.free { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; font-size: 10px; border-color: #a78bfa; }
 
     .bingo-btn {
-      width: 100%;
-      max-width: 340px;
-      margin-top: 10px;
-      padding: 12px;
-      font-size: 18px;
-      font-weight: 900;
-      color: #ffffff;
-      background: linear-gradient(135deg, #374151, #1f2937);
-      border: 2px solid #4b5563;
-      border-radius: 12px;
-      cursor: not-allowed;
-      opacity: 0.6;
-      transition: all 0.2s ease;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      width: 100%; max-width: 340px; margin-top: 10px; padding: 12px; font-size: 18px; font-weight: 900; color: #ffffff; background: linear-gradient(135deg, #374151, #1f2937); border: 2px solid #4b5563; border-radius: 12px; cursor: not-allowed; opacity: 0.6; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 1px;
     }
-    .bingo-btn.ready {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      border-color: #fca5a5;
-      cursor: pointer;
-      opacity: 1;
-      box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
-      animation: bounce 0.6s infinite alternate;
-    }
-    @keyframes bounce {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-4px); }
-    }
+    .bingo-btn.ready { background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #fca5a5; cursor: pointer; opacity: 1; box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); animation: bounce 0.6s infinite alternate; }
+    .bingo-btn.penalized { background: #6b7280 !important; border-color: #9ca3af !important; cursor: not-allowed !important; animation: none !important; box-shadow: none !important; }
+    @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-4px); } }
 
-    .win-banner {
-      display: none;
-      margin-top: 10px;
-      padding: 10px 20px;
-      background: linear-gradient(135deg, #22c55e, #15803d);
-      color: white;
-      font-weight: 800;
-      font-size: 15px;
-      border-radius: 10px;
-      text-align: center;
-    }
+    .win-banner { display: none; margin-top: 10px; padding: 10px 15px; background: #111827; border: 2px solid #10b981; color: white; border-radius: 10px; text-align: left; font-size: 12px; width: 100%; max-width: 340px; }
+    .win-banner h3 { color: #f59e0b; margin-bottom: 6px; font-size: 14px; text-align: center; }
 
-    .chat-box {
-      width: 100%;
-      max-width: 340px;
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 10px;
-      margin-top: 10px;
-      padding: 6px;
-    }
-    .chat-messages {
-      height: 50px;
-      overflow-y: auto;
-      font-size: 11px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
+    .chat-box { width: 100%; max-width: 340px; background: #111827; border: 1px solid #1f2937; border-radius: 10px; margin-top: 10px; padding: 6px; }
+    .chat-messages { height: 50px; overflow-y: auto; font-size: 11px; display: flex; flex-direction: column; gap: 4px; }
     .chat-msg { color: #d1d5db; }
     .chat-msg strong { color: #38bdf8; }
-    .chat-input-bar {
-      display: flex;
-      gap: 4px;
-      margin-top: 6px;
-    }
-    .chat-input-bar input {
-      flex: 1;
-      background: #1f2937;
-      border: 1px solid #374151;
-      border-radius: 6px;
-      padding: 4px 8px;
-      color: white;
-      font-size: 11px;
-    }
-    .chat-input-bar button {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: bold;
-    }
+    .chat-input-bar { display: flex; gap: 4px; margin-top: 6px; }
+    .chat-input-bar input { flex: 1; background: #1f2937; border: 1px solid #374151; border-radius: 6px; padding: 4px 8px; color: white; font-size: 11px; }
+    .chat-input-bar button { background: #3b82f6; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; }
   </style>
 </head>
 <body>
+
+  <!-- Modal for Board Selection -->
+  <div id="cardSelectionModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 style="color: #f59e0b; margin-bottom: 8px;">Select Card Board</h2>
+      <p style="font-size: 12px; color: #9ca3af; margin-bottom: 12px;">Choose your card layout for this round.</p>
+      <div class="bingo-grid" id="previewGrid" style="pointer-events: none; margin-bottom: 10px;"></div>
+      <button class="select-card-btn" onclick="regeneratePreviewBoard()">🎲 Roll New Numbers</button>
+      <button class="select-card-btn" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="confirmBoardSelection()">✅ Confirm & Play</button>
+    </div>
+  </div>
 
   <div class="header">
     <h1>🏆 WINNERS BINGO</h1>
@@ -305,11 +166,7 @@
   </div>
 
   <div class="bingo-grid" id="bingoGrid">
-    <div class="grid-header">B</div>
-    <div class="grid-header">I</div>
-    <div class="grid-header">N</div>
-    <div class="grid-header">G</div>
-    <div class="grid-header">O</div>
+    <div class="grid-header">B</div><div class="grid-header">I</div><div class="grid-header">N</div><div class="grid-header">G</div><div class="grid-header">O</div>
   </div>
 
   <button id="bingoBtn" class="bingo-btn" onclick="pressBingoBtn()">BINGO!</button>
@@ -336,28 +193,23 @@
 
     let boardState = Array(25).fill(false);
     let boardValues = [];
+    let previewBoardValues = [];
     let autoDaubEnabled = false;
     let audioCtx = null;
     let gameWon = false;
-    let hasBingoReady = false;
+    let isPenalized = false;
+    let penaltyTimer = null;
     let currentRoom = 'global';
     let totalWins = 0;
 
     const amharicNumbers = {
-      1: "አንድ", 2: "ሁለት", 3: "ሦስት", 4: "አራት", 5: "አምስት",
-      6: "ስድስት", 7: "ሰባት", 8: "ስምንት", 9: "ዘጠኝ", 10: "አሥር",
-      11: "አሥራ አንድ", 12: "አሥራ ሁለት", 13: "አሥራ ሦስት", 14: "አሥራ አራት", 15: "አሥራ አምስት",
-      16: "አሥራ ስድስት", 17: "አሥራ ሰባት", 18: "አሥራ ስምንት", 19: "አሥራ ዘጠኝ", 20: "ሀያ",
-      21: "ሀያ አንድ", 22: "ሀያ ሁለት", 23: "ሀያ ሦስት", 24: "ሀያ አራት", 25: "ሀያ አምስት",
-      26: "ሀያ ስድስት", 27: "ሀያ ሰባት", 28: "ሀያ ስምንት", 29: "ሀያ ዘጠኝ", 30: "ሠላሳ",
-      31: "ሠላሳ አንድ", 32: "ሠላሳ ሁለት", 33: "ሠላሳ ሦስት", 34: "ሠላሳ አራት", 35: "ሠላሳ አምስት",
-      36: "ሠላሳ ስድስት", 37: "ሠላሳ ሰባት", 38: "ሠላሳ ስምንት", 39: "ሠላሳ ዘጠኝ", 40: "አርባ",
-      41: "አርባ አንድ", 42: "አርባ ሁለት", 43: "አርባ ሦስት", 44: "አርባ አራት", 45: "አርባ አምስት",
-      46: "አርባ ስድስት", 47: "አርባ ሰባት", 48: "አርባ ስምንት", 49: "አርባ ዘጠኝ", 50: "ኃምሳ",
-      51: "ኃምሳ አንድ", 52: "ኃምሳ ሁለት", 53: "ኃምሳ ሦስት", 54: "ኃምሳ አራት", 55: "ኃምሳ አምስት",
-      56: "ኃምሳ ስድስት", 57: "ኃምሳ ሰባት", 58: "ኃምሳ ስምንት", 59: "ኃምሳ ዘጠኝ", 60: "ሥልሳ",
-      61: "ሥልሳ አንድ", 62: "ሥልሳ ሁለት", 63: "ሥልሳ ሦስት", 64: "ሥልሳ አራት", 65: "ሥልሳ አምስት",
-      66: "ሥልሳ ስድስት", 67: "ሥልሳ ሰባት", 68: "ሥልሳ ስምንት", 69: "ሥልሳ ዘጠኝ", 70: "ሰባ",
+      1: "አንድ", 2: "ሁለት", 3: "ሦስት", 4: "አራት", 5: "አምስት", 6: "ስድስት", 7: "ሰባት", 8: "ስምንት", 9: "ዘጠኝ", 10: "አሥር",
+      11: "አሥራ አንድ", 12: "አሥራ ሁለት", 13: "አሥራ ሦስት", 14: "አሥራ አራት", 15: "አሥራ አምስት", 16: "አሥራ ስድስት", 17: "አሥራ ሰባት", 18: "አሥራ ስምንት", 19: "አሥራ ዘጠኝ", 20: "ሀያ",
+      21: "ሀያ አንድ", 22: "ሀያ ሁለት", 23: "ሀያ ሦስት", 24: "ሀያ አራት", 25: "ሀያ አምስት", 26: "ሀያ ስድስት", 27: "ሀያ ሰባት", 28: "ሀያ ስምንት", 29: "ሀያ ዘጠኝ", 30: "ሠላሳ",
+      31: "ሠላሳ አንድ", 32: "ሠላሳ ሁለት", 33: "ሠላሳ ሦስት", 34: "ሠላሳ አራት", 35: "ሠላሳ አምስት", 36: "ሠላሳ ስድስት", 37: "ሠላሳ ሰባት", 38: "ሠላሳ ስምንት", 39: "ሠላሳ ዘጠኝ", 40: "አርባ",
+      41: "አርባ አንድ", 42: "አርባ ሁለት", 43: "አርባ ሦስት", 44: "አርባ አራት", 45: "አርባ አምስት", 46: "አርባ ስድስት", 47: "አርባ ሰባት", 48: "አርባ ስምንት", 49: "አርባ ዘጠኝ", 50: "ኃምሳ",
+      51: "ኃምሳ አንድ", 52: "ኃምሳ ሁለት", 53: "ኃምሳ ሦስት", 54: "ኃምሳ አራት", 55: "ኃምሳ አምስት", 56: "ኃምሳ ስድስት", 57: "ኃምሳ ሰባት", 58: "ኃምሳ ስምንት", 59: "ኃምሳ ዘጠኝ", 60: "ሥልሳ",
+      61: "ሥልሳ አንድ", 62: "ሥልሳ ሁለት", 63: "ሥልሳ ሦስት", 64: "ሥልሳ አራት", 65: "ሥልሳ አምስት", 66: "ሥልሳ ስድስት", 67: "ሥልሳ ሰባት", 68: "ሥልሳ ስምንት", 69: "ሥልሳ ዘጠኝ", 70: "ሰባ",
       71: "ሰባ አንድ", 72: "ሰባ ሁለት", 73: "ሰባ ሦስት", 74: "ሰባ አራት", 75: "ሰባ አምስት"
     };
 
@@ -373,8 +225,8 @@
 
     socket.on('connect', () => {
       document.getElementById('connStatus').innerText = "🟢 Live";
-      generateBoard();
-      socket.emit('joinRoom', { roomId: currentRoom, playerName, board: boardValues });
+      socket.emit('joinRoom', { roomId: currentRoom, playerName });
+      regeneratePreviewBoard();
     });
 
     socket.on('disconnect', () => {
@@ -389,7 +241,6 @@
       document.getElementById('roomLabel').innerText = data.roomId.toUpperCase();
       if (data.currentNumber) updateBallDisplay(data.currentNumber, data.calledNumbers || []);
       if (data.playersCount) document.getElementById('playerCount').innerText = data.playersCount;
-      if (data.winner) handleGameWon(data.winner);
     });
 
     socket.on('ballDrawn', (data) => {
@@ -408,29 +259,83 @@
       }
     });
 
-    socket.on('gameWinner', (winner) => {
-      handleGameWon(winner.name);
+    socket.on('bingoClaimedFirst', (data) => {
+      const banner = document.getElementById('winBanner');
+      banner.style.display = 'block';
+      banner.innerHTML = `<h3>⚠️ BINGO CALLED BY ${data.winnerName}!</h3><p>5-Second Window: Press BINGO if you also have a winning line!</p>`;
+    });
+
+    socket.on('falseBingoPenalty', (data) => {
+      isPenalized = true;
+      let secondsLeft = data.penaltyDuration;
+
+      const btn = document.getElementById('bingoBtn');
+      btn.classList.add('penalized');
+      btn.innerText = `PENALTY (${secondsLeft}s)`;
+
+      alert(`⚠️ Warning (Strike ${data.strikes}/2): ${data.reason}`);
+
+      if (penaltyTimer) clearInterval(penaltyTimer);
+      penaltyTimer = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft > 0) {
+          btn.innerText = `PENALTY (${secondsLeft}s)`;
+        } else {
+          clearInterval(penaltyTimer);
+          isPenalized = false;
+          btn.classList.remove('penalized');
+          btn.innerText = "BINGO!";
+          checkWinStatus();
+        }
+      }, 1000);
+    });
+
+    socket.on('playerKicked', (data) => {
+      alert(`⛔ ${data.reason}`);
+      document.getElementById('cardSelectionModal').style.display = 'flex';
+      regeneratePreviewBoard();
+    });
+
+    socket.on('gameFinishedWithWinners', (data) => {
+      gameWon = true;
+      const banner = document.getElementById('winBanner');
+      banner.style.display = 'block';
+
+      let html = `<h3>🏆 PRIZE POOL SPLIT (Total: ${data.totalPool})</h3><ul style="list-style: none; margin-top: 4px;">`;
+      let userWon = false;
+
+      data.payouts.forEach(p => {
+        if (p.name === playerName) userWon = true;
+        html += `<li style="margin-bottom: 3px;"><strong>${p.name}</strong>: +${p.amount} Coins <span style="color:#9ca3af; font-size:10px;">(${p.type})</span></li>`;
+      });
+      html += `</ul>`;
+      banner.innerHTML = html;
+
+      if (userWon) {
+        totalWins++;
+        document.getElementById('winCount').innerText = totalWins;
+        playFanfare();
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+      }
+
+      const btn = document.getElementById('bingoBtn');
+      btn.classList.remove('ready', 'penalized');
+      btn.innerText = "ROUND FINISHED";
     });
 
     socket.on('gameReset', () => {
       gameWon = false;
-      hasBingoReady = false;
+      isPenalized = false;
+      if (penaltyTimer) clearInterval(penaltyTimer);
+
       document.getElementById('winBanner').style.display = 'none';
 
       const btn = document.getElementById('bingoBtn');
-      btn.classList.remove('ready');
+      btn.classList.remove('ready', 'penalized');
       btn.innerText = "BINGO!";
-      btn.style.cursor = "pointer";
 
-      generateBoard();
-      socket.emit('registerBoard', { board: boardValues });
-    });
-
-    socket.on('bingoRejected', (data) => {
-      alert(data.reason);
-      gameWon = false;
-      const btn = document.getElementById('bingoBtn');
-      btn.innerText = "BINGO!";
+      document.getElementById('cardSelectionModal').style.display = 'flex';
+      regeneratePreviewBoard();
     });
 
     socket.on('chatMessage', (msg) => {
@@ -441,27 +346,6 @@
       container.appendChild(msgDiv);
       container.scrollTop = container.scrollHeight;
     });
-
-    function handleGameWon(winnerName) {
-      gameWon = true;
-      const banner = document.getElementById('winBanner');
-      banner.style.display = 'block';
-
-      if (winnerName === playerName) {
-        banner.innerText = "🎉 BINGO! YOU WIN! 🎉 (Next round starting soon...)";
-        totalWins++;
-        document.getElementById('winCount').innerText = totalWins;
-        playFanfare();
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-      } else {
-        banner.innerText = `🏆 ${winnerName} WON! (Next round starting soon...)`;
-      }
-
-      const btn = document.getElementById('bingoBtn');
-      btn.classList.remove('ready');
-      btn.innerText = "GAME OVER";
-      btn.style.cursor = "default";
-    }
 
     function updateBallDisplay(current, history) {
       const mainBall = document.getElementById('calledNumber');
@@ -513,8 +397,9 @@
     function switchRoom() {
       const input = document.getElementById('roomInput').value.trim().toLowerCase();
       currentRoom = input || 'global';
-      generateBoard();
-      socket.emit('joinRoom', { roomId: currentRoom, playerName, board: boardValues });
+      socket.emit('joinRoom', { roomId: currentRoom, playerName });
+      document.getElementById('cardSelectionModal').style.display = 'flex';
+      regeneratePreviewBoard();
     }
 
     function sendChat() {
@@ -552,31 +437,44 @@
       });
     }
 
-    function generateBoard() {
-      boardState = Array(25).fill(false);
+    function generateBoardValues() {
       const columns = [
-        getRandNums(1, 15, 5),
-        getRandNums(16, 30, 5),
-        getRandNums(31, 45, 5),
-        getRandNums(46, 60, 5),
+        getRandNums(1, 15, 5), getRandNums(16, 30, 5),
+        getRandNums(31, 45, 5), getRandNums(46, 60, 5),
         getRandNums(61, 75, 5)
       ];
-
-      boardValues = [];
+      const vals = [];
       for (let row = 0; row < 5; row++) {
         for (let col = 0; col < 5; col++) {
-          boardValues.push(columns[col][row]);
+          vals.push(columns[col][row]);
         }
       }
+      return vals;
+    }
+
+    function regeneratePreviewBoard() {
+      previewBoardValues = generateBoardValues();
+      const grid = document.getElementById('previewGrid');
+      grid.innerHTML = `<div class="grid-header">B</div><div class="grid-header">I</div><div class="grid-header">N</div><div class="grid-header">G</div><div class="grid-header">O</div>`;
+      previewBoardValues.forEach((val, idx) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        if (idx === 12) {
+          cell.innerText = 'FREE';
+          cell.classList.add('marked', 'free');
+        } else {
+          cell.innerText = val;
+        }
+        grid.appendChild(cell);
+      });
+    }
+
+    function confirmBoardSelection() {
+      boardValues = [...previewBoardValues];
+      boardState = Array(25).fill(false);
 
       const grid = document.getElementById('bingoGrid');
-      grid.innerHTML = `
-        <div class="grid-header">B</div>
-        <div class="grid-header">I</div>
-        <div class="grid-header">N</div>
-        <div class="grid-header">G</div>
-        <div class="grid-header">O</div>
-      `;
+      grid.innerHTML = `<div class="grid-header">B</div><div class="grid-header">I</div><div class="grid-header">N</div><div class="grid-header">G</div><div class="grid-header">O</div>`;
 
       boardValues.forEach((val, idx) => {
         const cell = document.createElement('div');
@@ -592,6 +490,9 @@
         }
         grid.appendChild(cell);
       });
+
+      document.getElementById('cardSelectionModal').style.display = 'none';
+      socket.emit('selectBoard', { board: boardValues });
     }
 
     function getRandNums(min, max, count) {
@@ -617,6 +518,8 @@
     }
 
     function checkWinStatus() {
+      if (isPenalized) return;
+
       const lines = [
         [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
         [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
@@ -635,19 +538,14 @@
 
       const btn = document.getElementById('bingoBtn');
       if (isWin && !gameWon) {
-        hasBingoReady = true;
         btn.classList.add('ready');
       } else {
-        hasBingoReady = false;
         btn.classList.remove('ready');
       }
     }
 
     function pressBingoBtn() {
-      if (gameWon) return;
-
-      const btn = document.getElementById('bingoBtn');
-      btn.innerText = "VERIFYING...";
+      if (isPenalized) return;
       socket.emit('claimBingo', { playerName });
     }
 
