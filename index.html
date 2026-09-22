@@ -9,17 +9,17 @@
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     :root {
-      --bg-main: #0f172a;        /* Calm Dark Slate */
-      --bg-card: #1e293b;        /* Card Background */
-      --bg-card-hover: #334155;  /* Subtle Accent Border */
+      --bg-main: #0f172a;        /* Dark Slate */
+      --bg-card: #1e293b;        /* Card Surface */
+      --bg-card-hover: #334155;  /* Subtle Borders */
       
-      --text-main: #f8fafc;      /* White Text */
-      --text-muted: #94a3b8;     /* Muted Grey */
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
       
       --accent-blue: #0ea5e9;    /* Sky Blue */
-      --accent-green: #10b981;   /* Emerald Green */
-      --accent-gold: #f59e0b;    /* Warm Gold for Called/Bingo */
-      --accent-red: #ef4444;     /* Warning/Penalty Red */
+      --accent-green: #10b981;   /* Primary Action Green */
+      --accent-gold: #f59e0b;    /* Warm Gold for Called Numbers */
+      --accent-red: #ef4444;     /* Penalty Red */
       
       --radius-sm: 8px;
       --radius-md: 12px;
@@ -32,148 +32,276 @@
       color: var(--text-main);
       display: flex;
       flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 10px;
+      height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      overflow: hidden;
     }
 
-    /* Modal Overlay for Card Selection */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.95);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 100; padding: 20px;
-    }
-    .modal-content {
+    /* TOP HEADER BAR */
+    .top-bar {
       background: var(--bg-card);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--bg-card-hover);
+    }
+
+    .user-info { display: flex; align-items: center; gap: 8px; }
+    .avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--accent-blue); color: #000;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px;
+    }
+
+    .stat-chip {
+      background: var(--bg-main);
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
       border: 1px solid var(--bg-card-hover);
-      border-radius: var(--radius-md);
-      padding: 16px; width: 100%; max-width: 340px; text-align: center;
     }
-    .modal-btn {
-      background: var(--accent-blue); color: white; border: none;
-      padding: 10px; margin-top: 8px; border-radius: var(--radius-sm);
-      font-weight: bold; width: 100%; cursor: pointer;
+    .stat-chip span { color: var(--accent-gold); }
+
+    /* VIEW MANAGEMENT CONTAINER */
+    .view-container {
+      flex: 1; overflow-y: auto; padding: 14px;
+      display: flex; flex-direction: column; gap: 12px;
     }
 
-    /* Header Bar */
-    .header { text-align: center; margin-bottom: 8px; }
-    .header h1 { font-size: 20px; color: var(--accent-gold); font-weight: 800; }
-    .header p { font-size: 11px; color: var(--accent-blue); }
+    .screen-view { display: none; flex-direction: column; gap: 12px; }
+    .screen-view.active { display: flex; }
 
-    /* Top Stats */
-    .stats-bar {
-      display: flex; justify-content: space-between; width: 100%; max-width: 340px;
-      background: var(--bg-card); padding: 8px 12px; border-radius: var(--radius-sm);
-      border: 1px solid var(--bg-card-hover); margin-bottom: 8px; font-size: 12px; color: var(--text-muted);
+    /* LOBBY / BOARD SELECTION VIEW */
+    .lobby-card {
+      background: var(--bg-card); border-radius: var(--radius-md);
+      padding: 14px; border: 1px solid var(--bg-card-hover); text-align: center;
     }
-    .stats-bar span { color: var(--text-main); font-weight: bold; }
 
-    /* Number Caller Bar */
-    .caller-section {
-      width: 100%; max-width: 340px; background: var(--bg-card); border: 1px solid var(--bg-card-hover);
-      border-radius: var(--radius-md); padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; align-items: center;
-    }
-    .ball-container { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-    .current-ball {
-      width: 54px; height: 54px; background: var(--accent-gold); color: #0f172a; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px;
-      box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
-    }
-    .mini-ball { width: 28px; height: 28px; background: var(--bg-main); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: var(--text-muted); }
-
-    /* Bingo Grid */
+    /* BINGO NUMBER GRID */
     .bingo-grid {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; max-width: 340px;
-      background: var(--bg-card); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--bg-card-hover);
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+      background: var(--bg-card); padding: 10px; border-radius: var(--radius-md);
+      border: 1px solid var(--bg-card-hover); width: 100%;
     }
     .grid-header { font-weight: 900; text-align: center; color: var(--accent-gold); font-size: 16px; }
+    
     .cell {
-      background: var(--bg-main); border: 1px solid var(--bg-card-hover); border-radius: var(--radius-sm);
-      aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-weight: 700;
-      font-size: 15px; cursor: pointer; color: var(--text-main);
+      background: var(--bg-main); border: 1px solid var(--bg-card-hover);
+      border-radius: var(--radius-sm); aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; cursor: pointer; color: var(--text-main);
+      transition: all 0.15s ease;
     }
     .cell.marked { background: var(--accent-green); color: #fff; border-color: #34d399; }
     .cell.free { background: var(--accent-blue); color: #fff; font-size: 10px; }
 
-    /* Bingo Button */
-    .bingo-btn {
-      width: 100%; max-width: 340px; margin-top: 10px; padding: 12px; font-size: 16px; font-weight: 900;
-      color: #fff; background: var(--bg-card-hover); border: none; border-radius: var(--radius-md);
-      cursor: not-allowed; opacity: 0.6; text-transform: uppercase;
+    /* GAMEPLAY COMPONENTS */
+    .caller-section {
+      background: var(--bg-card); border: 1px solid var(--bg-card-hover);
+      border-radius: var(--radius-md); padding: 10px; display: flex;
+      align-items: center; justify-content: space-between;
     }
-    .bingo-btn.ready { background: var(--accent-gold); color: #000; cursor: pointer; opacity: 1; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
-    .bingo-btn.penalized { background: var(--accent-red) !important; color: #fff !important; cursor: not-allowed !important; }
+    .ball-container { display: flex; align-items: center; gap: 10px; }
+    .current-ball {
+      width: 50px; height: 50px; background: var(--accent-gold); color: #0f172a;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 20px; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+    .mini-ball {
+      width: 26px; height: 26px; background: var(--bg-main); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 10px;
+      font-weight: 700; color: var(--text-muted);
+    }
 
-    .win-banner { display: none; margin-top: 10px; padding: 10px; background: var(--bg-card); border: 1px solid var(--accent-green); color: white; border-radius: 8px; font-size: 12px; width: 100%; max-width: 340px; }
+    /* ACTION BUTTONS */
+    .btn {
+      width: 100%; padding: 12px; border: none; border-radius: var(--radius-md);
+      font-weight: 800; font-size: 14px; cursor: pointer; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-primary { background: var(--accent-green); color: #fff; }
+    .btn-secondary { background: var(--bg-card-hover); color: var(--text-main); }
+    .btn-bingo {
+      background: var(--accent-gold); color: #000; font-size: 18px;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); margin-top: 4px;
+    }
+    .btn-bingo.penalized { background: var(--accent-red) !important; color: #fff !important; cursor: not-allowed; }
+
+    /* BOTTOM NAV BAR */
+    .bottom-nav {
+      background: var(--bg-card); display: flex; justify-content: space-around;
+      padding: 10px 0; border-top: 1px solid var(--bg-card-hover);
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      color: var(--text-muted); font-size: 10px; font-weight: 600; cursor: pointer;
+    }
+    .nav-item.active { color: var(--accent-blue); }
+    .nav-icon { font-size: 18px; }
   </style>
 </head>
 <body>
 
-  <!-- Modal for Board Selection -->
-  <div id="cardSelectionModal" class="modal-overlay">
-    <div class="modal-content">
-      <h2 style="color: var(--accent-gold); margin-bottom: 8px;">Select Card Board</h2>
-      <div class="bingo-grid" id="previewGrid" style="pointer-events: none; margin-bottom: 10px;"></div>
-      <button class="modal-btn" onclick="regeneratePreviewBoard()">🎲 Roll New Board</button>
-      <button class="modal-btn" style="background: var(--accent-green);" onclick="confirmBoardSelection()">✅ Confirm & Join</button>
+  <!-- Top Navigation Header -->
+  <header class="top-bar">
+    <div class="user-info">
+      <div class="avatar" id="avatarLetter">N</div>
+      <div>
+        <div style="font-weight: 700; font-size: 13px;" id="userName">Natty</div>
+        <div style="font-size: 10px; color: var(--text-muted);" id="connStatus">Connecting...</div>
+      </div>
     </div>
-  </div>
-
-  <div class="header">
-    <h1>🏆 ADDIS BINGO</h1>
-    <p id="playerLabel">Player: Natty</p>
-  </div>
-
-  <div class="stats-bar">
-    <div>Status: <span id="connStatus">Connecting...</span></div>
-    <div>Players: <span id="playerCount">1</span></div>
-  </div>
-
-  <div class="caller-section">
-    <div class="ball-container">
-      <div id="calledNumber" class="current-ball">--</div>
-      <div style="display:flex; gap:4px;" id="historyContainer"></div>
+    <div style="display: flex; gap: 6px;">
+      <div class="stat-chip">Bal: <span id="userBalance">0.00 ETB</span></div>
+      <div class="stat-chip">Online: <span id="onlineCount">1</span></div>
     </div>
-  </div>
+  </header>
 
-  <div class="bingo-grid" id="bingoGrid">
-    <div class="grid-header">B</div><div class="grid-header">I</div><div class="grid-header">N</div><div class="grid-header">G</div><div class="grid-header">O</div>
-  </div>
+  <!-- Views Container -->
+  <main class="view-container">
 
-  <button id="bingoBtn" class="bingo-btn" onclick="pressBingoBtn()">BINGO!</button>
-  <div id="winBanner" class="win-banner"></div>
+    <!-- 1. LOBBY & BOARD SELECTION VIEW -->
+    <section id="view-lobby" class="screen-view active">
+      <div class="lobby-card">
+        <h2 style="color: var(--accent-gold); font-size: 16px; margin-bottom: 4px;">Choose Your Bingo Board</h2>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Roll until you get your favorite lucky board grid.</p>
+        
+        <div class="bingo-grid" id="previewGrid" style="margin-bottom: 12px;"></div>
+        
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" onclick="rollNewBoard()">🎲 Roll Board</button>
+          <button class="btn btn-primary" onclick="confirmAndStartGame()">READY & START ▶</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. ACTIVE GAMEPLAY VIEW -->
+    <section id="view-game" class="screen-view">
+      <!-- Ball Caller Section -->
+      <div class="caller-section">
+        <div class="ball-container">
+          <div class="current-ball" id="calledNumber">--</div>
+          <div>
+            <div style="font-size: 10px; color: var(--text-muted);">Recent Balls</div>
+            <div style="display: flex; gap: 4px; margin-top: 2px;" id="ballHistory"></div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 10px; color: var(--text-muted);">Stake</div>
+          <div style="font-size: 14px; font-weight: 800; color: var(--accent-gold);">10 ETB</div>
+        </div>
+      </div>
+
+      <!-- Live Interactive Game Board -->
+      <div class="bingo-grid" id="activeGrid"></div>
+
+      <!-- Primary Bingo Action Button -->
+      <button class="btn btn-bingo" id="bingoBtn" onclick="claimBingo()">BINGO!</button>
+    </section>
+
+    <!-- 3. SCORES / LEADERBOARD VIEW -->
+    <section id="view-scores" class="screen-view">
+      <div class="lobby-card">
+        <h3 style="color: var(--accent-gold); margin-bottom: 10px;">🏆 Room Leaderboard</h3>
+        <p style="font-size: 12px; color: var(--text-muted);">Top active players with verified wins in this session.</p>
+      </div>
+    </section>
+
+    <!-- 4. HISTORY VIEW -->
+    <section id="view-history" class="screen-view">
+      <div class="lobby-card">
+        <h3 style="color: var(--accent-blue); margin-bottom: 10px;">📜 Match History</h3>
+        <p style="font-size: 12px; color: var(--text-muted);">No previous rounds played yet.</p>
+      </div>
+    </section>
+
+    <!-- 5. WALLET VIEW -->
+    <section id="view-wallet" class="screen-view">
+      <div class="lobby-card">
+        <h3 style="color: var(--accent-green); margin-bottom: 10px;">👛 Your Wallet</h3>
+        <p style="font-size: 14px; font-weight: bold; margin-bottom: 12px;">Available: <span style="color: var(--accent-gold);">0.00 ETB</span></p>
+        <button class="btn btn-primary" style="margin-bottom: 8px;">DEPOSIT</button>
+        <button class="btn btn-secondary">WITHDRAW</button>
+      </div>
+    </section>
+
+    <!-- 6. PROFILE VIEW -->
+    <section id="view-profile" class="screen-view">
+      <div class="lobby-card">
+        <h3 style="color: var(--text-main); margin-bottom: 6px;" id="profileName">Natty</h3>
+        <p style="font-size: 11px; color: var(--text-muted);">Telegram Player Verified</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Main Navigation Bar -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('lobby')">
+      <div class="nav-icon">🎲</div>
+      <span>Lobby</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('game')">
+      <div class="nav-icon">🎮</div>
+      <span>Game</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('scores')">
+      <div class="nav-icon">🏆</div>
+      <span>Scores</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('wallet')">
+      <div class="nav-icon">👛</div>
+      <span>Wallet</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('profile')">
+      <div class="nav-icon">👤</div>
+      <span>Profile</span>
+    </div>
+  </nav>
 
   <script>
+    // Initialize Telegram WebApp
     const tg = window.Telegram.WebApp;
     tg.ready(); tg.expand();
 
     const playerName = tg.initDataUnsafe?.user?.first_name || "Natty";
-    document.getElementById('playerLabel').innerText = `Player: ${playerName}`;
+    document.getElementById('userName').innerText = playerName;
+    document.getElementById('profileName').innerText = playerName;
+    document.getElementById('avatarLetter').innerText = playerName.charAt(0).toUpperCase();
 
+    // Connect to Backend WebSocket
     const socket = io("https://bingoapp-backend-pbav.onrender.com");
 
-    let boardState = Array(25).fill(false);
-    let boardValues = [];
+    let activeBoardValues = [];
     let previewBoardValues = [];
+    let boardState = Array(25).fill(false);
     let isPenalized = false;
     let penaltyTimer = null;
 
     socket.on('connect', () => {
-      document.getElementById('connStatus').innerText = "🟢 Live";
+      document.getElementById('connStatus').innerText = "🟢 Connected";
       socket.emit('joinRoom', { roomId: 'global', playerName });
-      regeneratePreviewBoard();
+      rollNewBoard();
     });
 
-    socket.on('disconnect', () => { document.getElementById('connStatus').innerText = "🔴 Offline"; });
-    socket.on('playerCountUpdate', (count) => { document.getElementById('playerCount').innerText = count; });
+    socket.on('disconnect', () => {
+      document.getElementById('connStatus').innerText = "🔴 Disconnected";
+    });
+
+    socket.on('playerCountUpdate', (count) => {
+      document.getElementById('onlineCount').innerText = count;
+    });
 
     socket.on('ballDrawn', (data) => {
       document.getElementById('calledNumber').innerText = data.number;
-      const hist = document.getElementById('historyContainer');
-      hist.innerHTML = '';
+      const historyContainer = document.getElementById('ballHistory');
+      historyContainer.innerHTML = '';
       data.history.slice(-4, -1).reverse().forEach(n => {
-        const mini = document.createElement('div'); mini.className = 'mini-ball'; mini.innerText = n; hist.appendChild(mini);
+        const mini = document.createElement('div');
+        mini.className = 'mini-ball'; mini.innerText = n;
+        historyContainer.appendChild(mini);
       });
     });
 
@@ -183,13 +311,14 @@
       const btn = document.getElementById('bingoBtn');
       btn.classList.add('penalized');
       btn.innerText = `PENALTY (${left}s)`;
-      alert(`⚠️ Strike ${data.strikes}/2: False BINGO claim!`);
+      alert(`⚠️ False BINGO! Penalty active for ${left} seconds.`);
 
       if (penaltyTimer) clearInterval(penaltyTimer);
       penaltyTimer = setInterval(() => {
         left--;
-        if (left > 0) btn.innerText = `PENALTY (${left}s)`;
-        else {
+        if (left > 0) {
+          btn.innerText = `PENALTY (${left}s)`;
+        } else {
           clearInterval(penaltyTimer);
           isPenalized = false;
           btn.classList.remove('penalized');
@@ -200,36 +329,47 @@
 
     socket.on('playerKicked', (data) => {
       alert(`⛔ ${data.reason}`);
-      document.getElementById('cardSelectionModal').style.display = 'flex';
-      regeneratePreviewBoard();
+      switchTab('lobby');
     });
 
-    function regeneratePreviewBoard() {
+    // ROLL NEW RANDOM BOARD
+    function rollNewBoard() {
       previewBoardValues = [];
       const cols = [
-        getRand(1,15), getRand(16,30), getRand(31,45), getRand(46,60), getRand(61,75)
+        getRandNumbers(1,15), getRandNumbers(16,30),
+        getRandNumbers(31,45), getRandNumbers(46,60),
+        getRandNumbers(61,75)
       ];
-      for(let r=0; r<5; r++) for(let c=0; c<5; c++) previewBoardValues.push(cols[c][r]);
+      for(let r=0; r<5; r++) {
+        for(let c=0; c<5; c++) previewBoardValues.push(cols[c][r]);
+      }
 
       const grid = document.getElementById('previewGrid');
       grid.innerHTML = `<div class="grid-header">B</div><div class="grid-header">I</div><div class="grid-header">N</div><div class="grid-header">G</div><div class="grid-header">O</div>`;
+      
       previewBoardValues.forEach((val, i) => {
         const cell = document.createElement('div');
         cell.className = 'cell';
-        cell.innerText = i === 12 ? 'FREE' : val;
-        if(i === 12) cell.classList.add('marked', 'free');
+        if(i === 12) {
+          cell.innerText = 'FREE'; cell.classList.add('marked', 'free');
+        } else {
+          cell.innerText = val;
+        }
         grid.appendChild(cell);
       });
     }
 
-    function confirmBoardSelection() {
-      boardValues = [...previewBoardValues];
+    // CONFIRM BOARD & GO TO GAMING VIEW
+    function confirmAndStartGame() {
+      activeBoardValues = [...previewBoardValues];
       boardState = Array(25).fill(false);
-      const grid = document.getElementById('bingoGrid');
+      
+      const grid = document.getElementById('activeGrid');
       grid.innerHTML = `<div class="grid-header">B</div><div class="grid-header">I</div><div class="grid-header">N</div><div class="grid-header">G</div><div class="grid-header">O</div>`;
-      boardValues.forEach((val, idx) => {
+      
+      activeBoardValues.forEach((val, idx) => {
         const cell = document.createElement('div');
-        cell.className = 'cell'; cell.id = `cell-${idx}`;
+        cell.className = 'cell'; cell.id = `active-cell-${idx}`;
         if (idx === 12) {
           cell.innerText = 'FREE'; cell.classList.add('marked', 'free'); boardState[12] = true;
         } else {
@@ -237,21 +377,45 @@
           cell.onclick = () => {
             boardState[idx] = !boardState[idx];
             cell.classList.toggle('marked');
-            document.getElementById('bingoBtn').classList.add('ready');
           };
         }
         grid.appendChild(cell);
       });
-      document.getElementById('cardSelectionModal').style.display = 'none';
-      socket.emit('selectBoard', { board: boardValues });
+
+      // Send board choice to backend server
+      socket.emit('selectBoard', { board: activeBoardValues });
+
+      // Automatically switch player into the Gaming Place screen
+      switchTab('game');
     }
 
-    function getRand(min, max) {
-      const a = []; while(a.length < 5) { const r = Math.floor(Math.random()*(max-min+1))+min; if(!a.includes(r)) a.push(r); } return a;
+    function claimBingo() {
+      if (!isPenalized) {
+        socket.emit('claimBingo', { playerName });
+      }
     }
 
-    function pressBingoBtn() {
-      if (!isPenalized) socket.emit('claimBingo', { playerName });
+    function switchTab(tabName) {
+      document.querySelectorAll('.screen-view').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+      const selectedView = document.getElementById(`view-${tabName}`);
+      if(selectedView) selectedView.classList.add('active');
+
+      const navIndices = { lobby: 0, game: 1, scores: 2, wallet: 3, profile: 4 };
+      const navItems = document.querySelectorAll('.nav-item');
+      if (navItems[navIndices[tabName]]) {
+        navItems[navIndices[tabName]].classList.add('active');
+      }
+    }
+
+    function getRandNumbers(min, max) {
+      const arr = [];
+      while(arr.length < 5) {
+        const r = Math.floor(Math.random()*(max-min+1))+min;
+        if(!arr.includes(r)) arr.push(r);
+      }
+      return arr;
     }
   </script>
 </body>
