@@ -1,0 +1,5 @@
+my-bingo-app/
+├── public/
+│   └── index.html
+├── package.json
+└── server.js
