@@ -109,10 +109,7 @@
       0% { transform: scale(0.3); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
     }
-    .history-balls {
-      display: flex;
-      gap: 4px;
-    }
+    .history-balls { display: flex; gap: 4px; }
     .mini-ball {
       width: 28px;
       height: 28px;
@@ -337,7 +334,7 @@
 
     const socket = io("https://bingoapp-backend-pbav.onrender.com");
 
-    const boardState = Array(25).fill(false);
+    let boardState = Array(25).fill(false);
     let boardValues = [];
     let autoDaubEnabled = false;
     let audioCtx = null;
@@ -376,7 +373,8 @@
 
     socket.on('connect', () => {
       document.getElementById('connStatus').innerText = "🟢 Live";
-      socket.emit('joinRoom', { roomId: currentRoom, playerName });
+      generateBoard();
+      socket.emit('joinRoom', { roomId: currentRoom, playerName, board: boardValues });
     });
 
     socket.on('disconnect', () => {
@@ -391,6 +389,7 @@
       document.getElementById('roomLabel').innerText = data.roomId.toUpperCase();
       if (data.currentNumber) updateBallDisplay(data.currentNumber, data.calledNumbers || []);
       if (data.playersCount) document.getElementById('playerCount').innerText = data.playersCount;
+      if (data.winner) handleGameWon(data.winner);
     });
 
     socket.on('ballDrawn', (data) => {
@@ -409,6 +408,31 @@
       }
     });
 
+    socket.on('gameWinner', (winner) => {
+      handleGameWon(winner.name);
+    });
+
+    socket.on('gameReset', () => {
+      gameWon = false;
+      hasBingoReady = false;
+      document.getElementById('winBanner').style.display = 'none';
+
+      const btn = document.getElementById('bingoBtn');
+      btn.classList.remove('ready');
+      btn.innerText = "BINGO!";
+      btn.style.cursor = "pointer";
+
+      generateBoard();
+      socket.emit('registerBoard', { board: boardValues });
+    });
+
+    socket.on('bingoRejected', (data) => {
+      alert(data.reason);
+      gameWon = false;
+      const btn = document.getElementById('bingoBtn');
+      btn.innerText = "BINGO!";
+    });
+
     socket.on('chatMessage', (msg) => {
       const container = document.getElementById('chatMsgs');
       const msgDiv = document.createElement('div');
@@ -418,23 +442,32 @@
       container.scrollTop = container.scrollHeight;
     });
 
-    socket.on('gameWinner', (winner) => {
+    function handleGameWon(winnerName) {
+      gameWon = true;
       const banner = document.getElementById('winBanner');
       banner.style.display = 'block';
-      if (winner.name === playerName) {
-        banner.innerText = "🎉 BINGO! YOU WIN! 🎉";
+
+      if (winnerName === playerName) {
+        banner.innerText = "🎉 BINGO! YOU WIN! 🎉 (Next round starting soon...)";
         totalWins++;
         document.getElementById('winCount').innerText = totalWins;
+        playFanfare();
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
       } else {
-        banner.innerText = `🏆 ${winner.name} CALLED BINGO!`;
+        banner.innerText = `🏆 ${winnerName} WON! (Next round starting soon...)`;
       }
-    });
+
+      const btn = document.getElementById('bingoBtn');
+      btn.classList.remove('ready');
+      btn.innerText = "GAME OVER";
+      btn.style.cursor = "default";
+    }
 
     function updateBallDisplay(current, history) {
       const mainBall = document.getElementById('calledNumber');
       mainBall.innerText = getBallFormatted(current);
       mainBall.style.animation = 'none';
-      mainBall.offsetHeight; // Reflow
+      mainBall.offsetHeight;
       mainBall.style.animation = 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
 
       const histContainer = document.getElementById('historyContainer');
@@ -459,18 +492,13 @@
         if (num > 45) letter = 'G';
         if (num > 60) letter = 'O';
 
-        // 1. Speak English Letter
         const letterUtterance = new SpeechSynthesisUtterance(letter);
         letterUtterance.lang = 'en-US';
-        letterUtterance.rate = 1.0;
 
-        // 2. Speak Amharic Number
         const amharicText = amharicNumbers[num] || num;
         const numberUtterance = new SpeechSynthesisUtterance(amharicText);
         numberUtterance.lang = 'am-ET';
-        numberUtterance.rate = 0.9;
 
-        // Fallback to English number if Amharic TTS voice is missing on device
         numberUtterance.onerror = () => {
           const fallbackUtterance = new SpeechSynthesisUtterance(num.toString());
           fallbackUtterance.lang = 'en-US';
@@ -485,7 +513,8 @@
     function switchRoom() {
       const input = document.getElementById('roomInput').value.trim().toLowerCase();
       currentRoom = input || 'global';
-      socket.emit('joinRoom', { roomId: currentRoom, playerName });
+      generateBoard();
+      socket.emit('joinRoom', { roomId: currentRoom, playerName, board: boardValues });
     }
 
     function sendChat() {
@@ -524,6 +553,7 @@
     }
 
     function generateBoard() {
+      boardState = Array(25).fill(false);
       const columns = [
         getRandNums(1, 15, 5),
         getRandNums(16, 30, 5),
@@ -540,6 +570,14 @@
       }
 
       const grid = document.getElementById('bingoGrid');
+      grid.innerHTML = `
+        <div class="grid-header">B</div>
+        <div class="grid-header">I</div>
+        <div class="grid-header">N</div>
+        <div class="grid-header">G</div>
+        <div class="grid-header">O</div>
+      `;
+
       boardValues.forEach((val, idx) => {
         const cell = document.createElement('div');
         cell.className = 'cell';
@@ -606,25 +644,15 @@
     }
 
     function pressBingoBtn() {
-      if (!hasBingoReady || gameWon) return;
-
-      gameWon = true;
-      socket.emit('claimBingo', { playerName });
-      playFanfare();
-      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-      confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+      if (gameWon) return;
 
       const btn = document.getElementById('bingoBtn');
-      btn.classList.remove('ready');
-      btn.innerText = "BINGO CLAIMED!";
-      btn.style.cursor = "default";
+      btn.innerText = "VERIFYING...";
+      socket.emit('claimBingo', { playerName });
     }
 
-    // Unlock speech synthesis on first touch/tap
     document.body.addEventListener('touchstart', () => initAudio(), { once: true });
     document.body.addEventListener('click', () => initAudio(), { once: true });
-
-    generateBoard();
   </script>
 </body>
 </html>
