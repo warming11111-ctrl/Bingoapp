@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Winners Bingo Pro</title>
+  <title>Winners Bingo Ultimate</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -16,33 +16,33 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 12px;
+      padding: 10px;
       min-height: 100vh;
       overflow-x: hidden;
     }
-    .header { text-align: center; margin-bottom: 8px; }
+    .header { text-align: center; margin-bottom: 6px; }
     .header h1 {
-      font-size: 22px;
+      font-size: 20px;
       background: linear-gradient(135deg, #f59e0b, #ef4444);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       font-weight: 800;
     }
-    .header p { font-size: 12px; color: #38bdf8; }
+    .header p { font-size: 11px; color: #38bdf8; }
 
     .room-bar {
       display: flex;
       gap: 6px;
       width: 100%;
       max-width: 340px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .room-bar input {
       flex: 1;
       background: #111827;
       border: 1px solid #374151;
       border-radius: 8px;
-      padding: 8px 10px;
+      padding: 6px 10px;
       color: #fff;
       font-size: 12px;
       text-transform: uppercase;
@@ -51,7 +51,7 @@
       background: linear-gradient(135deg, #10b981, #059669);
       color: white;
       border: none;
-      padding: 8px 14px;
+      padding: 6px 12px;
       font-size: 12px;
       font-weight: bold;
       border-radius: 8px;
@@ -64,31 +64,36 @@
       width: 100%;
       max-width: 340px;
       background: #111827;
-      padding: 8px 12px;
+      padding: 6px 10px;
       border-radius: 10px;
       border: 1px solid #1f2937;
-      margin-bottom: 10px;
-      font-size: 12px;
+      margin-bottom: 8px;
+      font-size: 11px;
       color: #9ca3af;
     }
     .stats-bar span { color: #f3f4f6; font-weight: bold; }
 
-    .caller-box {
+    .caller-section {
+      width: 100%;
+      max-width: 340px;
       background: #111827;
       border: 2px solid #1f2937;
       border-radius: 14px;
-      padding: 10px 16px;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .ball-container {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      max-width: 340px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      gap: 8px;
+      margin-bottom: 6px;
     }
     .current-ball {
-      width: 52px;
-      height: 52px;
+      width: 56px;
+      height: 56px;
       background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b);
       border-radius: 50%;
       display: flex;
@@ -96,27 +101,48 @@
       justify-content: center;
       font-weight: 800;
       font-size: 22px;
-      box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
       border: 2px solid #fca5a5;
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    .status-text { font-size: 11px; color: #10b981; font-weight: 600; }
-    .toggle-label {
-      font-size: 11px;
-      color: #9ca3af;
+    @keyframes popIn {
+      0% { transform: scale(0.3); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .history-balls {
+      display: flex;
+      gap: 4px;
+    }
+    .mini-ball {
+      width: 28px;
+      height: 28px;
+      background: #374151;
+      border-radius: 50%;
       display: flex;
       align-items: center;
-      gap: 4px;
-      margin-top: 4px;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      color: #d1d5db;
     }
+
+    .caller-controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+    .toggle-group { display: flex; gap: 10px; }
 
     .bingo-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
+      gap: 5px;
       width: 100%;
       max-width: 340px;
       background: #111827;
-      padding: 10px;
+      padding: 8px;
       border-radius: 14px;
       border: 1px solid #1f2937;
     }
@@ -124,19 +150,18 @@
       font-weight: 900;
       text-align: center;
       color: #f59e0b;
-      font-size: 20px;
-      padding-bottom: 2px;
+      font-size: 18px;
     }
     .cell {
       background: #1f2937;
       border: 1px solid #374151;
-      border-radius: 10px;
+      border-radius: 8px;
       aspect-ratio: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 16px;
+      font-size: 15px;
       cursor: pointer;
       user-select: none;
       transition: all 0.15s ease;
@@ -146,7 +171,7 @@
       color: #ffffff;
       border-color: #34d399;
       transform: scale(0.96);
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
     }
     .cell.winning-line {
       animation: pulseWin 0.8s infinite alternate;
@@ -154,27 +179,70 @@
       border-color: #fef08a !important;
     }
     @keyframes pulseWin {
-      0% { transform: scale(0.96); }
+      0% { transform: scale(0.95); }
       100% { transform: scale(1.05); }
     }
     .cell.free {
       background: linear-gradient(135deg, #8b5cf6, #6d28d9);
       color: white;
-      font-size: 11px;
+      font-size: 10px;
       border-color: #a78bfa;
+    }
+
+    .chat-box {
+      width: 100%;
+      max-width: 340px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      margin-top: 10px;
+      padding: 6px;
+    }
+    .chat-messages {
+      height: 60px;
+      overflow-y: auto;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-right: 4px;
+    }
+    .chat-msg { color: #d1d5db; }
+    .chat-msg strong { color: #38bdf8; }
+    .chat-input-bar {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .chat-input-bar input {
+      flex: 1;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 4px 8px;
+      color: white;
+      font-size: 11px;
+    }
+    .chat-input-bar button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
     }
 
     .win-banner {
       display: none;
-      margin-top: 14px;
-      padding: 12px 24px;
+      margin-top: 10px;
+      padding: 10px 20px;
       background: linear-gradient(135deg, #22c55e, #15803d);
       color: white;
       font-weight: 800;
-      font-size: 16px;
-      border-radius: 12px;
+      font-size: 15px;
+      border-radius: 10px;
       text-align: center;
-      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
     }
   </style>
 </head>
@@ -191,21 +259,22 @@
   </div>
 
   <div class="stats-bar">
-    <div>Room: <span id="roomLabel">Global</span></div>
+    <div>Room: <span id="roomLabel">GLOBAL</span></div>
     <div>Players: <span id="playerCount">1</span></div>
-    <div>Called: <span id="calledCount">0</span>/75</div>
+    <div>Wins: <span id="winCount">0</span></div>
   </div>
 
-  <div class="caller-box">
-    <div>
-      <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">LIVE BALL</div>
+  <div class="caller-section">
+    <div class="ball-container">
       <div id="calledNumber" class="current-ball">--</div>
+      <div class="history-balls" id="historyContainer"></div>
     </div>
-    <div style="text-align: right;">
-      <div id="connStatus" class="status-text">Connecting...</div>
-      <label class="toggle-label">
-        <input type="checkbox" id="autoDaub" onchange="toggleAutoDaub()"> Auto-Daub
-      </label>
+    <div class="caller-controls">
+      <div id="connStatus" style="color: #10b981; font-weight: 600;">Connecting...</div>
+      <div class="toggle-group">
+        <label><input type="checkbox" id="voiceToggle" checked> Voice</label>
+        <label><input type="checkbox" id="autoDaub" onchange="toggleAutoDaub()"> Auto-Daub</label>
+      </div>
     </div>
   </div>
 
@@ -218,6 +287,14 @@
   </div>
 
   <div id="winBanner" class="win-banner"></div>
+
+  <div class="chat-box">
+    <div class="chat-messages" id="chatMsgs"></div>
+    <div class="chat-input-bar">
+      <input type="text" id="chatInput" placeholder="Send a message...">
+      <button onclick="sendChat()">Send</button>
+    </div>
+  </div>
 
   <script>
     const tg = window.Telegram.WebApp;
@@ -235,14 +312,15 @@
     let audioCtx = null;
     let gameWon = false;
     let currentRoom = 'global';
+    let totalWins = 0;
 
     socket.on('connect', () => {
-      document.getElementById('connStatus').innerText = "🟢 Live Connected";
+      document.getElementById('connStatus').innerText = "🟢 Live";
       socket.emit('joinRoom', { roomId: currentRoom, playerName });
     });
 
     socket.on('disconnect', () => {
-      document.getElementById('connStatus').innerText = "🔴 Disconnected";
+      document.getElementById('connStatus').innerText = "🔴 Offline";
     });
 
     socket.on('playerCountUpdate', (count) => {
@@ -251,8 +329,7 @@
 
     socket.on('gameState', (data) => {
       document.getElementById('roomLabel').innerText = data.roomId.toUpperCase();
-      if (data.currentNumber) document.getElementById('calledNumber').innerText = data.currentNumber;
-      if (data.calledNumbers) document.getElementById('calledCount').innerText = data.calledNumbers.length;
+      if (data.currentNumber) updateBallDisplay(data.currentNumber, data.calledNumbers || []);
       if (data.playersCount) document.getElementById('playerCount').innerText = data.playersCount;
     });
 
@@ -260,8 +337,8 @@
       playTone(600, 0.1, 'square');
       if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
-      document.getElementById('calledNumber').innerText = data.number;
-      document.getElementById('calledCount').innerText = data.history.length;
+      updateBallDisplay(data.number, data.history);
+      speakBall(data.number);
 
       if (autoDaubEnabled) {
         const targetIdx = boardValues.findIndex(v => v === data.number);
@@ -272,20 +349,73 @@
       }
     });
 
+    socket.on('chatMessage', (msg) => {
+      const container = document.getElementById('chatMsgs');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'chat-msg';
+      msgDiv.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text}`;
+      container.appendChild(msgDiv);
+      container.scrollTop = container.scrollHeight;
+    });
+
     socket.on('gameWinner', (winner) => {
       const banner = document.getElementById('winBanner');
       banner.style.display = 'block';
       if (winner.name === playerName) {
         banner.innerText = "🎉 BINGO! YOU WIN! 🎉";
+        totalWins++;
+        document.getElementById('winCount').innerText = totalWins;
       } else {
         banner.innerText = `🏆 ${winner.name} CALLED BINGO!`;
       }
     });
 
+    function updateBallDisplay(current, history) {
+      const mainBall = document.getElementById('calledNumber');
+      mainBall.innerText = current;
+      mainBall.style.animation = 'none';
+      mainBall.offsetHeight; // Trigger reflow
+      mainBall.style.animation = 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+      const histContainer = document.getElementById('historyContainer');
+      histContainer.innerHTML = '';
+      const recent = history.slice(-5, -1).reverse();
+      recent.forEach(num => {
+        const mini = document.createElement('div');
+        mini.className = 'mini-ball';
+        mini.innerText = num;
+        histContainer.appendChild(mini);
+      });
+    }
+
+    function speakBall(num) {
+      if (!document.getElementById('voiceToggle').checked) return;
+      if ('speechSynthesis' in window) {
+        let letter = 'B';
+        if (num > 15) letter = 'I';
+        if (num > 30) letter = 'N';
+        if (num > 45) letter = 'G';
+        if (num > 60) letter = 'O';
+
+        const utterance = new SpeechSynthesisUtterance(`${letter} ${num}`);
+        utterance.rate = 1.1;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
     function switchRoom() {
       const input = document.getElementById('roomInput').value.trim().toLowerCase();
       currentRoom = input || 'global';
       socket.emit('joinRoom', { roomId: currentRoom, playerName });
+    }
+
+    function sendChat() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (text) {
+        socket.emit('sendChat', { text, sender: playerName });
+        input.value = '';
+      }
     }
 
     function initAudio() {
