@@ -451,7 +451,7 @@
     function speakEnglishLetterAmharicNumber(num) {
       if (!document.getElementById('voiceToggle').checked) return;
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Clear speech queue
+        window.speechSynthesis.cancel();
 
         let letter = 'B';
         if (num > 15) letter = 'I';
@@ -459,14 +459,26 @@
         if (num > 45) letter = 'G';
         if (num > 60) letter = 'O';
 
-        const amharicNumText = amharicNumbers[num] || num;
-        const speechText = `${letter}, ${amharicNumText}`;
-        const utterance = new SpeechSynthesisUtterance(speechText);
-        utterance.lang = 'am-ET';
-        utterance.rate = 0.95;
-        utterance.pitch = 1.0;
+        // 1. Speak English Letter
+        const letterUtterance = new SpeechSynthesisUtterance(letter);
+        letterUtterance.lang = 'en-US';
+        letterUtterance.rate = 1.0;
 
-        window.speechSynthesis.speak(utterance);
+        // 2. Speak Amharic Number
+        const amharicText = amharicNumbers[num] || num;
+        const numberUtterance = new SpeechSynthesisUtterance(amharicText);
+        numberUtterance.lang = 'am-ET';
+        numberUtterance.rate = 0.9;
+
+        // Fallback to English number if Amharic TTS voice is missing on device
+        numberUtterance.onerror = () => {
+          const fallbackUtterance = new SpeechSynthesisUtterance(num.toString());
+          fallbackUtterance.lang = 'en-US';
+          window.speechSynthesis.speak(fallbackUtterance);
+        };
+
+        window.speechSynthesis.speak(letterUtterance);
+        window.speechSynthesis.speak(numberUtterance);
       }
     }
 
@@ -607,6 +619,10 @@
       btn.innerText = "BINGO CLAIMED!";
       btn.style.cursor = "default";
     }
+
+    // Unlock speech synthesis on first touch/tap
+    document.body.addEventListener('touchstart', () => initAudio(), { once: true });
+    document.body.addEventListener('click', () => initAudio(), { once: true });
 
     generateBoard();
   </script>
