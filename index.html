@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Winners Bingo Ultimate</title>
+  <title>Winners Bingo Multiplayer</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -73,22 +74,10 @@
       box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
       border: 2px solid #fca5a5;
     }
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      align-items: flex-end;
-    }
-    .btn-draw {
-      background: linear-gradient(135deg, #6366f1, #a855f7);
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      font-size: 14px;
-      font-weight: bold;
-      border-radius: 10px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+    .status-text {
+      font-size: 11px;
+      color: #10b981;
+      font-weight: 600;
     }
     .toggle-label {
       font-size: 11px;
@@ -96,6 +85,7 @@
       display: flex;
       align-items: center;
       gap: 4px;
+      margin-top: 4px;
     }
 
     .bingo-grid {
@@ -151,7 +141,7 @@
       background: linear-gradient(135deg, #22c55e, #15803d);
       color: white;
       font-weight: 800;
-      font-size: 18px;
+      font-size: 16px;
       border-radius: 12px;
       text-align: center;
       box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
@@ -171,18 +161,18 @@
   </div>
 
   <div class="stats-bar">
-    <div>Marks: <span id="markCount">1</span>/25</div>
+    <div>Players: <span id="playerCount">1</span></div>
     <div>Called: <span id="calledCount">0</span>/75</div>
     <div>Lines: <span id="lineCount">0</span></div>
   </div>
 
   <div class="caller-box">
     <div>
-      <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">BALL DRAWN</div>
+      <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">LIVE BALL</div>
       <div id="calledNumber" class="current-ball">--</div>
     </div>
-    <div class="controls">
-      <button class="btn-draw" onclick="drawNumber()">Call Ball 🎲</button>
+    <div style="text-align: right;">
+      <div id="connStatus" class="status-text">Connecting...</div>
       <label class="toggle-label">
         <input type="checkbox" id="autoDaub" onchange="toggleAutoDaub()"> Auto-Daub
       </label>
@@ -197,23 +187,75 @@
     <div class="grid-header">O</div>
   </div>
 
-  <div id="winBanner" class="win-banner">🎉 BINGO! YOU WIN! 🎉</div>
+  <div id="winBanner" class="win-banner"></div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
-    const user = tg.initDataUnsafe?.user;
-    if (user) {
-      document.getElementById('playerLabel').innerText = `Player: ${user.first_name}`;
-    }
+    const playerName = tg.initDataUnsafe?.user?.first_name || "Natty";
+    document.getElementById('playerLabel').innerText = `Player: ${playerName}`;
 
-    const calledNumbers = new Set();
+    // Connect to live Render server
+    const socket = io("https://bingoapp-backend-pbav.onrender.com");
+
     const boardState = Array(25).fill(false);
     let boardValues = [];
     let autoDaubEnabled = false;
     let audioCtx = null;
+    let gameWon = false;
+
+    socket.on('connect', () => {
+      document.getElementById('connStatus').innerText = "🟢 Live Connected";
+      socket.emit('joinGame', { name: playerName });
+    });
+
+    socket.on('disconnect', () => {
+      document.getElementById('connStatus').innerText = "🔴 Disconnected";
+    });
+
+    socket.on('playerCountUpdate', (count) => {
+      document.getElementById('playerCount').innerText = count;
+    });
+
+    socket.on('gameState', (data) => {
+      if (data.currentNumber) {
+        document.getElementById('calledNumber').innerText = data.currentNumber;
+      }
+      if (data.calledNumbers) {
+        document.getElementById('calledCount').innerText = data.calledNumbers.length;
+      }
+      if (data.playersCount) {
+        document.getElementById('playerCount').innerText = data.playersCount;
+      }
+    });
+
+    socket.on('ballDrawn', (data) => {
+      playTone(600, 0.1, 'square');
+      if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
+      document.getElementById('calledNumber').innerText = data.number;
+      document.getElementById('calledCount').innerText = data.history.length;
+
+      if (autoDaubEnabled) {
+        const targetIdx = boardValues.findIndex(v => v === data.number);
+        if (targetIdx !== -1 && !boardState[targetIdx]) {
+          const el = document.getElementById(`cell-${targetIdx}`);
+          toggleMark(targetIdx, el);
+        }
+      }
+    });
+
+    socket.on('gameWinner', (winner) => {
+      const banner = document.getElementById('winBanner');
+      banner.style.display = 'block';
+      if (winner.name === playerName) {
+        banner.innerText = "🎉 BINGO! YOU WIN! 🎉";
+      } else {
+        banner.innerText = `🏆 ${winner.name} CALLED BINGO!`;
+      }
+    });
 
     function initAudio() {
       if (!audioCtx) {
@@ -292,40 +334,11 @@
 
       boardState[idx] = !boardState[idx];
       el.classList.toggle('marked');
-      updateStats();
       checkWin();
-    }
-
-    function drawNumber() {
-      if (calledNumbers.size >= 75) return;
-      playTone(600, 0.1, 'square');
-      if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-
-      let num;
-      do {
-        num = Math.floor(Math.random() * 75) + 1;
-      } while (calledNumbers.has(num));
-
-      calledNumbers.add(num);
-      document.getElementById('calledNumber').innerText = num;
-      document.getElementById('calledCount').innerText = calledNumbers.size;
-
-      if (autoDaubEnabled) {
-        const targetIdx = boardValues.findIndex(v => v === num);
-        if (targetIdx !== -1 && !boardState[targetIdx]) {
-          const el = document.getElementById(`cell-${targetIdx}`);
-          toggleMark(targetIdx, el);
-        }
-      }
     }
 
     function toggleAutoDaub() {
       autoDaubEnabled = document.getElementById('autoDaub').checked;
-    }
-
-    function updateStats() {
-      const marks = boardState.filter(Boolean).length;
-      document.getElementById('markCount').innerText = marks;
     }
 
     function checkWin() {
@@ -342,8 +355,9 @@
 
       document.getElementById('lineCount').innerText = completedLines;
 
-      if (completedLines > 0 && document.getElementById('winBanner').style.display !== 'block') {
-        document.getElementById('winBanner').style.display = 'block';
+      if (completedLines > 0 && !gameWon) {
+        gameWon = true;
+        socket.emit('claimBingo', { name: playerName });
         playFanfare();
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
