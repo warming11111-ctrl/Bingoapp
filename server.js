@@ -8,113 +8,173 @@ app.use(cors());
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*", methods: ["GET", "POST"] }
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 
+// Store room states
 const rooms = {};
 
-function createRoom(roomId) {
-  return {
-    id: roomId,
-    calledNumbers: [],
-    currentNumber: null,
-    players: {},
-    isPlaying: false,
-    timer: null
-  };
+function getOrCreateRoom(roomId) {
+  if (!rooms[roomId]) {
+    rooms[roomId] = {
+      players: {},       // socket.id -> { name, board }
+      calledNumbers: [],
+      availableNumbers: Array.from({ length: 75 }, (_, i) => i + 1),
+      timer: null,
+      gameActive: false,
+      winner: null
+    };
+  }
+  return rooms[roomId];
 }
 
-function startRoomCaller(roomId) {
+function startRoomGame(roomId) {
   const room = rooms[roomId];
-  if (!room || room.isPlaying) return;
-  
-  room.isPlaying = true;
-  room.calledNumbers = [];
+  if (room.timer) clearInterval(room.timer);
 
+  room.calledNumbers = [];
+  room.availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
+  room.gameActive = true;
+  room.winner = null;
+
+  io.to(roomId).emit('gameReset');
+
+  // Draw a new ball every 4 seconds
   room.timer = setInterval(() => {
-    if (!rooms[roomId] || room.calledNumbers.length >= 75) {
+    if (!room.gameActive || room.availableNumbers.length === 0) {
       clearInterval(room.timer);
-      if (rooms[roomId]) room.isPlaying = false;
+      room.timer = null;
       return;
     }
 
-    let num;
-    do {
-      num = Math.floor(Math.random() * 75) + 1;
-    } while (room.calledNumbers.includes(num));
-
-    room.calledNumbers.push(num);
-    room.currentNumber = num;
+    const randomIndex = Math.floor(Math.random() * room.availableNumbers.length);
+    const drawnNumber = room.availableNumbers.splice(randomIndex, 1)[0];
+    room.calledNumbers.push(drawnNumber);
 
     io.to(roomId).emit('ballDrawn', {
-      number: num,
+      number: drawnNumber,
       history: room.calledNumbers
     });
   }, 4000);
 }
 
-io.on('connection', (socket) => {
-  let currentRoom = null;
+// Server-side win validation
+function validateBingo(board, calledNumbers) {
+  if (!board || board.length !== 25) return false;
 
-  socket.on('joinRoom', ({ roomId, playerName }) => {
-    const roomKey = roomId || 'global';
-    
-    if (!rooms[roomKey]) {
-      rooms[roomKey] = createRoom(roomKey);
+  const calledSet = new Set(calledNumbers);
+  
+  // Cell 12 is FREE space
+  const isMarked = (idx) => idx === 12 || calledSet.has(board[idx]);
+
+  const winningLines = [
+    // Rows
+    [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
+    // Columns
+    [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
+    // Diagonals
+    [0,6,12,18,24], [4,8,12,16,20]
+  ];
+
+  return winningLines.some(line => line.every(idx => isMarked(idx)));
+}
+
+io.on('connection', (socket) => {
+  let currentRoomId = null;
+
+  socket.on('joinRoom', ({ roomId, playerName, board }) => {
+    const cleanRoomId = (roomId || 'global').toLowerCase();
+
+    if (currentRoomId) {
+      socket.leave(currentRoomId);
     }
 
-    currentRoom = roomKey;
-    socket.join(roomKey);
+    currentRoomId = cleanRoomId;
+    socket.join(currentRoomId);
 
-    const room = rooms[roomKey];
-    room.players[socket.id] = { name: playerName, id: socket.id };
+    const room = getOrCreateRoom(currentRoomId);
+    room.players[socket.id] = { name: playerName, board };
 
+    const playerCount = Object.keys(room.players).length;
+
+    // Send current room status
     socket.emit('gameState', {
-      roomId: roomKey,
-      currentNumber: room.currentNumber,
+      roomId: currentRoomId,
+      currentNumber: room.calledNumbers[room.calledNumbers.length - 1] || null,
       calledNumbers: room.calledNumbers,
-      playersCount: Object.keys(room.players).length
+      playersCount: playerCount,
+      winner: room.winner
     });
 
-    io.to(roomKey).emit('playerCountUpdate', Object.keys(room.players).length);
+    io.to(currentRoomId).emit('playerCountUpdate', playerCount);
 
-    if (!room.isPlaying) {
-      startRoomCaller(roomKey);
+    // Auto-start game if not already running
+    if (!room.gameActive && !room.timer) {
+      startRoomGame(currentRoomId);
     }
   });
 
-  socket.on('sendChat', ({ text, sender }) => {
-    if (currentRoom) {
-      io.to(currentRoom).emit('chatMessage', { text, sender });
+  socket.on('registerBoard', ({ board }) => {
+    if (currentRoomId && rooms[currentRoomId] && rooms[currentRoomId].players[socket.id]) {
+      rooms[currentRoomId].players[socket.id].board = board;
     }
   });
 
   socket.on('claimBingo', ({ playerName }) => {
-    if (!currentRoom || !rooms[currentRoom]) return;
-    
-    const room = rooms[currentRoom];
-    io.to(currentRoom).emit('gameWinner', { name: playerName });
-    clearInterval(room.timer);
-    room.isPlaying = false;
+    if (!currentRoomId || !rooms[currentRoomId]) return;
+
+    const room = rooms[currentRoomId];
+    if (!room.gameActive) return;
+
+    const player = room.players[socket.id];
+    const playerBoard = player ? player.board : null;
+
+    // Validate if claim is real
+    const isValidWin = validateBingo(playerBoard, room.calledNumbers);
+
+    if (isValidWin) {
+      room.gameActive = false;
+      room.winner = playerName;
+
+      if (room.timer) {
+        clearInterval(room.timer);
+        room.timer = null;
+      }
+
+      // Notify all players in room of official winner
+      io.to(currentRoomId).emit('gameWinner', { name: playerName, valid: true });
+
+      // Restart game after 10 seconds
+      setTimeout(() => {
+        if (rooms[currentRoomId]) {
+          startRoomGame(currentRoomId);
+        }
+      }, 10000);
+    } else {
+      // Reject fake BINGO claim
+      socket.emit('bingoRejected', { reason: "Invalid BINGO! You don't have a completed winning line from called numbers." });
+    }
+  });
+
+  socket.on('sendChat', ({ text, sender }) => {
+    if (currentRoomId) {
+      io.to(currentRoomId).emit('chatMessage', { text, sender });
+    }
   });
 
   socket.on('disconnect', () => {
-    if (currentRoom && rooms[currentRoom]) {
-      const room = rooms[currentRoom];
-      delete room.players[socket.id];
-      
-      const remaining = Object.keys(room.players).length;
-      io.to(currentRoom).emit('playerCountUpdate', remaining);
-
-      if (remaining === 0 && currentRoom !== 'global') {
-        clearInterval(room.timer);
-        delete rooms[currentRoom];
-      }
+    if (currentRoomId && rooms[currentRoomId]) {
+      delete rooms[currentRoomId].players[socket.id];
+      const count = Object.keys(rooms[currentRoomId].players).length;
+      io.to(currentRoomId).emit('playerCountUpdate', count);
     }
   });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Bingo Ultimate server running on port ${PORT}`);
+  console.log(`Bingo Server running on port ${PORT}`);
 });
