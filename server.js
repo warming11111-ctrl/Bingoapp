@@ -83,6 +83,12 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('sendChat', ({ text, sender }) => {
+    if (currentRoom) {
+      io.to(currentRoom).emit('chatMessage', { text, sender });
+    }
+  });
+
   socket.on('claimBingo', ({ playerName }) => {
     if (!currentRoom || !rooms[currentRoom]) return;
     
@@ -110,5 +116,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Bingo multi-room server running on port ${PORT}`);
+  console.log(`Bingo Ultimate server running on port ${PORT}`);
 });
