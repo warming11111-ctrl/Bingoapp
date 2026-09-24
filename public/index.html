@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Addis Bingo</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    :root {
+      --bg-main: #0f172a;        /* Dark Slate */
+      --bg-card: #1e293b;        /* Surface Card */
+      --bg-card-hover: #334155;  /* Secondary / Border */
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      --accent-blue: #0ea5e9;
+      --accent-green: #10b981;
+      --accent-gold: #f59e0b;    /* Warm Amber */
+      --accent-red: #ef4444;
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; overflow: hidden;
+    }
+
+    /* HEADER BAR */
+    .top-bar {
+      background: var(--bg-card); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--bg-card-hover);
+    }
+    .user-info { display: flex; align-items: center; gap: 8px; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent-blue); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+    .stat-chip { background: var(--bg-main); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid var(--bg-card-hover); }
+    .stat-chip span { color: var(--accent-gold); }
+
+    /* VIEW MANAGEMENT */
+    .view-container { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+    .screen-view { display: none; flex-direction: column; gap: 12px; }
+    .screen-view.active { display: flex; }
+
+    .card-panel { background: var(--bg-card); border-radius: var(--radius-md); padding: 12px; border: 1px solid var(--bg-card-hover); text-align: center; }
+
+    /* 200 BOARDS SELECTION GRID */
+    .board-selector-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px 0;
+    }
+    .board-number-btn {
+      background: var(--bg-main); border: 1px solid var(--bg-card-hover); border-radius: var(--radius-sm);
+      color: var(--text-main); font-weight: 700; padding: 10px 0; font-size: 13px; cursor: pointer;
+    }
+    .board-number-btn.selected {
+      background: var(--accent-gold); color: #0f172a; border-color: var(--accent-gold); font-weight: 900;
+    }
+
+    /* PAGINATION STYLING */
+    .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+    .page-btn { background: var(--bg-card-hover); color: var(--text-main); border: none; padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; font-weight: bold; }
+
+    /* BINGO BOARD DISPLAY */
+    .bingo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; background: var(--bg-card); padding: 8px; border-radius: var(--radius-md); border: 1px solid var(--bg-card-hover); width: 100%; }
+    .grid-header { font-weight: 900; text-align: center; color: var(--accent-gold); font-size: 15px; }
+    
+    .cell {
+      background: var(--bg-main); border: 1px solid var(--bg-card-hover); border-radius: var(--radius-sm); aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: pointer; color: var(--text-main);
+    }
+    .cell.marked { background: var(--accent-green); color: #fff; border-color: #34d399; }
+    .cell.free { background: var(--accent-blue); color: #fff; font-size: 10px; }
+
+    /* LIVE GAME CORNER PRIZE & CALLER */
+    .game-top-panel {
+      display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); border-radius: var(--radius-md); padding: 10px; border: 1px solid var(--bg-card-hover);
+    }
+    .prize-tag {
+      text-align: right; background: rgba(245, 158, 11, 0.1); border: 1px solid var(--accent-gold); padding: 6px 12px; border-radius: var(--radius-sm);
+    }
+    .prize-amount { font-size: 16px; font-weight: 900; color: var(--accent-gold); }
+
+    .current-ball { width: 48px; height: 48px; background: var(--accent-gold); color: #0f172a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+
+    /* ACTION BUTTONS */
+    .btn { width: 100%; padding: 12px; border: none; border-radius: var(--radius-md); font-weight: 800; font-size: 14px; cursor: pointer; text-transform: uppercase; }
+    .btn-primary { background: var(--accent-green); color: #fff; }
+    .btn-bingo { background: var(--accent-gold); color: #000; font-size: 18px; margin-top: 4px; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+
+    /* BOTTOM NAV */
+    .bottom-nav { background: var(--bg-card); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid var(--bg-card-hover); }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--text-muted); font-size: 10px; font-weight: 600; cursor: pointer; }
+    .nav-item.active { color: var(--accent-blue); }
+  </style>
+</head>
+<body>
+
+  <!-- Top Stat Header -->
+  <header class="top-bar">
+    <div class="user-info">
+      <div class="avatar" id="avatarLetter">N</div>
+      <div>
+        <div style="font-weight: 700; font-size: 13px;" id="userName">Natty</div>
+        <div style="font-size: 10px; color: var(--text-muted);" id="connStatus">Connecting...</div>
+      </div>
+    </div>
+    <div class="stat-chip">Online Players: <span id="onlineCount">1</span></div>
+  </header>
+
+  <main class="view-container">
+
+    <!-- 1. BOARD CHOOSING SCREEN (INTERFACE 1) -->
+    <section id="view-choose" class="screen-view active">
+      <div class="card-panel">
+        <h2 style="color: var(--accent-gold); font-size: 15px;">Select Your Board Number (1 to 200)</h2>
+        <p style="font-size: 11px; color: var(--text-muted);">Choose a board ID to load its unique matrix.</p>
+
+        <!-- 20 Boards per Page -->
+        <div class="board-selector-grid" id="boardNumbersContainer"></div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-bar">
+          <button class="page-btn" onclick="changePage(-1)">◀ Prev</button>
+          <span style="font-size: 11px; font-weight: bold;" id="pageIndicator">Page 1 / 10</span>
+          <button class="page-btn" onclick="changePage(1)">Next ▶</button>
+        </div>
+      </div>
+
+      <!-- Live Preview of Selected Board -->
+      <div class="card-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 12px; font-weight: bold;">Previewing Board <span id="selectedBoardID" style="color: var(--accent-gold);">#1</span></span>
+        </div>
+        <div class="bingo-grid" id="previewGrid"></div>
+        <button class="btn btn-primary" style="margin-top: 10px;" onclick="confirmAndGoToGame()">START PLAYING ▶</button>
+      </div>
+    </section>
+
+    <!-- 2. ACTIVE GAMING SCREEN (INTERFACE 2) -->
+    <section id="view-game" class="screen-view">
+      
+      <!-- Top Section: Current Ball & WIN PRIZE POOL in Corner -->
+      <div class="game-top-panel">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="current-ball" id="calledNumber">--</div>
+          <div>
+            <div style="font-size: 10px; color: var(--text-muted);">Drawn Ball</div>
+            <div style="font-size: 11px; font-weight: bold;" id="lastBallText">Waiting...</div>
+          </div>
+        </div>
+
+        <!-- Dynamic Winner Prize Display -->
+        <div class="prize-tag">
+          <div style="font-size: 9px; color: var(--text-muted); text-transform: uppercase;">WIN PRIZE</div>
+          <div class="prize-amount" id="winPrizeDisplay">1,800 ETB</div>
+        </div>
+      </div>
+
+      <!-- Active Interactive Gameplay Grid -->
+      <div class="bingo-grid" id="activeGrid"></div>
+
+      <!-- Main Action Button -->
+      <button class="btn btn-bingo" onclick="claimBingo()">BINGO!</button>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('choose')">🎲 Choose Board</div>
+    <div class="nav-item" onclick="switchTab('game')">🎮 Game Room</div>
+  </nav>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready(); tg.expand();
+
+    const playerName = tg.initDataUnsafe?.user?.first_name || "Natty";
+    document.getElementById('userName').innerText = playerName;
+
+    const socket = io("https://bingoapp-backend-pbav.onrender.com");
+
+    let currentPage = 1;
+    const totalPages = 10;
+    const boardsPerPage = 20; // 200 Boards Total
+
+    let selectedBoardNumber = 1;
+    let selectedBoardMatrix = [];
+
+    // SEED ALGORITHM: Generates a distinct board for each number 1 to 200
+    function generateUniqueBoardMatrix(boardId) {
+      function pseudoRandom(seed) {
+        let x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+      }
+
+      const cols = [];
+      const ranges = [[1, 15], [16, 30], [31, 45], [46, 60], [61, 75]];
+
+      ranges.forEach((range, colIdx) => {
+        const colNums = [];
+        let seedOffset = boardId * 100 + colIdx * 10;
+        while (colNums.length < 5) {
+          const rand = Math.floor(pseudoRandom(seedOffset++) * (range[1] - range[0] + 1)) + range[0];
+          if (!colNums.includes(rand)) colNums.push(rand);
+        }
+        cols.push(colNums);
+      });
+
+      const matrix = [];
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          matrix.push(cols[c][r]);
+        }
+      }
+      return matrix;
+    }
+
+    // RENDER PAGINATED BOARD NUMBER BUTTONS (1 to 200)
+    function renderBoardNumberSelector() {
+      const container = document.getElementById('boardNumbersContainer');
+      container.innerHTML = '';
+
+      const start = (currentPage - 1) * boardsPerPage + 1;
+      const end = currentPage * boardsPerPage;
+
+      for (let i = start; i <= end; i++) {
+        const btn = document.createElement('button');
+        btn.className = `board-number-btn ${i === selectedBoardNumber ? 'selected' : ''}`;
+        btn.innerText = `#${i}`;
+        btn.onclick = () => selectBoardNumber(i);
+        container.appendChild(btn);
+      }
+
+      document.getElementById('pageIndicator').innerText = `Page ${currentPage} / ${totalPages}`;
+    }
+
+    function changePage(delta) {
+      currentPage += delta;
+      if (currentPage < 1) currentPage = 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      renderBoardNumberSelector();
+    }
+
+    function selectBoardNumber(num) {
+      selectedBoardNumber = num;
+      document.getElementById('selectedBoardID').innerText = `#${num}`;
+      renderBoardNumberSelector();
+      renderPreviewGrid();
+    }
+
+    function renderPreviewGrid() {
+      selectedBoardMatrix = generateUniqueBoardMatrix(selectedBoardNumber);
+      const grid = document.getElementById('previewGrid');
+      grid.innerHTML = `<div class="grid-header">B</div><div class="grid-header">I</div><div class="grid-header">N</div><div class="grid-header">G</div><div class="grid-header">O</div>`;
+
+      selectedBoardMatrix.forEach((val, idx) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        if (idx === 12) {
+          cell.innerText = 'FREE'; cell.classList.add('marked', 'free');
+        } else {
+          cell.innerText = val;
+        }
+        grid.appendChild(cell);
+      });
+    }
+
+    // CONFIRM CHOICE & SWITCH TO GAMEPLAY INTERFACE
+    function confirmAndGoToGame() {
+      const activeGrid = document.getElementById('activeGrid');
+      activeGrid.innerHTML = `<div class="grid-header">B</div><div class="grid-header">I</div><div class="grid-header">N</div><div class="grid-header">G</div><div class="grid-header">O</div>`;
+
+      selectedBoardMatrix.forEach((val, idx) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        if (idx === 12) {
+          cell.innerText = 'FREE'; cell.classList.add('marked', 'free');
+        } else {
+          cell.innerText = val;
+          cell.onclick = () => cell.classList.toggle('marked');
+        }
+        activeGrid.appendChild(cell);
+      });
+
+      // Send choice to WebSocket Backend
+      if (socket && socket.connected) {
+        socket.emit('selectBoard', { boardId: selectedBoardNumber, matrix: selectedBoardMatrix });
+      }
+
+      switchTab('game');
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.screen-view').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+      const targetView = document.getElementById(`view-${tabName}`);
+      if (targetView) targetView.classList.add('active');
+
+      const navIndices = { choose: 0, game: 1 };
+      const navItems = document.querySelectorAll('.nav-item');
+      if (navItems[navIndices[tabName]]) navItems[navIndices[tabName]].classList.add('active');
+    }
+
+    function claimBingo() {
+      if (socket && socket.connected) {
+        socket.emit('claimBingo', { playerName, boardId: selectedBoardNumber });
+      }
+    }
+
+    // WEBSOCKET HANDLERS
+    socket.on('connect', () => {
+      document.getElementById('connStatus').innerText = "🟢 Online";
+      socket.emit('joinRoom', { roomId: 'global', playerName });
+    });
+
+    socket.on('playerCountUpdate', (data) => {
+      document.getElementById('onlineCount').innerText = data.count || data;
+      // Calculate dynamic prize pool based on total players online
+      const calculatedPrize = (data.count || 1) * 10 * 0.9;
+      document.getElementById('winPrizeDisplay').innerText = `${calculatedPrize.toFixed(0)} ETB`;
+    });
+
+    socket.on('ballDrawn', (data) => {
+      document.getElementById('calledNumber').innerText = data.number;
+      document.getElementById('lastBallText').innerText = `Ball #${data.number}`;
+    });
+
+    // INITIAL SETUP ON LOAD
+    renderBoardNumberSelector();
+    renderPreviewGrid();
+  </script>
+</body>
+</html>
