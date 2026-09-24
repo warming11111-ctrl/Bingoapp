@@ -75,12 +75,11 @@
     .btn-bingo { background: var(--accent-gold); color: #000; font-size: 18px; margin-top: 4px; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
     .btn-bingo:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
 
-    .bottom-nav { background: var(--bg-card); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid var(--bg-card-hover); }
+    .bottom-nav { background: var(--bg-card); display: flex; justify-around: space-around; padding: 10px 0; border-top: 1px solid var(--bg-card-hover); }
     .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--text-muted); font-size: 10px; font-weight: 600; cursor: pointer; }
     .nav-item.active { color: var(--accent-blue); }
     .nav-item.disabled { opacity: 0.3; pointer-events: none; }
 
-    /* PENALTY OVERLAY MODAL */
     .modal-overlay {
       position: absolute; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(15, 23, 42, 0.95);
@@ -100,7 +99,6 @@
 </head>
 <body>
 
-  <!-- PENALTY WARNING OVERLAY -->
   <div class="modal-overlay" id="penaltyModal">
     <div class="modal-box">
       <h3 style="color: var(--accent-red); font-size: 18px;">⚠️ FALSE BINGO CLAIM!</h3>
@@ -127,7 +125,6 @@
 
   <main class="view-container">
 
-    <!-- CHOOSING SCREEN -->
     <section id="view-choose" class="screen-view active">
       <div class="card-panel">
         <h2 style="color: var(--accent-gold); font-size: 15px;">Select Your Board Number (1 to 200)</h2>
@@ -151,9 +148,7 @@
       </div>
     </section>
 
-    <!-- ACTIVE GAMING SCREEN -->
     <section id="view-game" class="screen-view">
-      
       <div class="game-top-panel">
         <div style="display: flex; align-items: center; gap: 10px;">
           <div class="current-ball" id="calledNumber">--</div>
@@ -184,8 +179,6 @@
   <script>
     const tg = window.Telegram.WebApp;
     tg.ready(); tg.expand();
-    
-    // Warn player if they try closing Telegram Mini App during active game
     tg.enableClosingConfirmation();
 
     const playerName = tg.initDataUnsafe?.user?.first_name || "Natty";
@@ -200,7 +193,66 @@
     let selectedBoardNumber = 1;
     let selectedBoardMatrix = [];
     let isGameLocked = false;
-    let markedIndices = [12]; // FREE space is pre-marked
+    let markedIndices = [12];
+
+    // WEB AUDIO ENGINE
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function initAudio() {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playSound(type) {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+
+      if (type === 'ball') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (type === 'click') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, now);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      } else if (type === 'penalty') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.setValueAtTime(120, now + 0.15);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } else if (type === 'win') {
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const noteOsc = audioCtx.createOscillator();
+          const noteGain = audioCtx.createGain();
+          noteOsc.connect(noteGain);
+          noteGain.connect(audioCtx.destination);
+          
+          noteOsc.frequency.setValueAtTime(freq, now + idx * 0.12);
+          noteGain.gain.setValueAtTime(0.3, now + idx * 0.12);
+          noteGain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.25);
+          
+          noteOsc.start(now + idx * 0.12);
+          noteOsc.stop(now + idx * 0.12 + 0.25);
+        });
+      }
+    }
 
     function generateUniqueBoardMatrix(boardId) {
       function pseudoRandom(seed) {
@@ -241,7 +293,7 @@
         const btn = document.createElement('button');
         btn.className = `board-number-btn ${i === selectedBoardNumber ? 'selected' : ''}`;
         btn.innerText = `#${i}`;
-        btn.onclick = () => selectBoardNumber(i);
+        btn.onclick = () => { playSound('click'); selectBoardNumber(i); };
         container.appendChild(btn);
       }
 
@@ -250,6 +302,7 @@
 
     function changePage(delta) {
       if (isGameLocked) return;
+      playSound('click');
       currentPage += delta;
       if (currentPage < 1) currentPage = 1;
       if (currentPage > totalPages) currentPage = totalPages;
@@ -281,8 +334,8 @@
       });
     }
 
-    // LOCK GAME & TRANSITION
     function confirmAndGoToGame() {
+      playSound('click');
       isGameLocked = true;
       document.getElementById('navChoose').classList.add('disabled');
 
@@ -297,6 +350,7 @@
         } else {
           cell.innerText = val;
           cell.onclick = () => {
+            playSound('click');
             cell.classList.toggle('marked');
             if (cell.classList.contains('marked')) {
               if (!markedIndices.includes(idx)) markedIndices.push(idx);
@@ -313,7 +367,8 @@
     }
 
     function switchTab(tabName) {
-      if (isGameLocked && tabName === 'choose') return; // Strict lock against returning
+      if (isGameLocked && tabName === 'choose') return;
+      playSound('click');
 
       document.querySelectorAll('.screen-view').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -326,7 +381,6 @@
       if (navItems[navIndices[tabName]]) navItems[navIndices[tabName]].classList.add('active');
     }
 
-    // CLAIM BINGO WITH SERVER VALIDATION & 3s PENALTY
     function claimBingo() {
       const bingoBtn = document.getElementById('bingoBtn');
       bingoBtn.disabled = true;
@@ -337,9 +391,10 @@
         markedIndices: markedIndices
       }, (response) => {
         if (response.success) {
+          playSound('win');
           alert("🎉 BINGO! YOU WIN THE GAME!");
         } else {
-          // FALSE BINGO -> TRIGGER 3s COUNTDOWN PENALTY
+          playSound('penalty');
           triggerPenalty();
         }
       });
@@ -365,7 +420,6 @@
       }, 1000);
     }
 
-    // WEBSOCKET LISTENERS
     socket.on('connect', () => {
       document.getElementById('connStatus').innerText = "🟢 Online";
       socket.emit('joinRoom');
@@ -378,6 +432,7 @@
     });
 
     socket.on('ballDrawn', (data) => {
+      playSound('ball');
       document.getElementById('calledNumber').innerText = data.number;
       document.getElementById('lastBallText').innerText = `Ball #${data.number}`;
     });
@@ -390,10 +445,14 @@
     });
 
     socket.on('gameOver', (data) => {
+      playSound('win');
       alert(`Game ended! Board #${data.winnerBoard} claimed Bingo!`);
       isGameLocked = false;
       document.getElementById('navChoose').classList.remove('disabled');
     });
+
+    document.body.addEventListener('touchstart', initAudio, { once: true });
+    document.body.addEventListener('click', initAudio, { once: true });
 
     renderBoardNumberSelector();
     renderPreviewGrid();
